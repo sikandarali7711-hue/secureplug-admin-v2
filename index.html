@@ -533,7 +533,7 @@ async function handleAddRetailer(e) {
     // Insert notice settings if present
     const noticeStyleEl = document.getElementById('retNoticeStyle');
     if (noticeStyleEl && business && business.id) {
-      await sb.from('notices').insert({
+      const { error: noticeError } = await sb.from('notices').insert({
         business_id: business.id,
         notice_style: noticeStyleEl.value,
         show_due_amount: document.getElementById('retShowDueAmount') ? document.getElementById('retShowDueAmount').checked : true,
@@ -542,7 +542,10 @@ async function handleAddRetailer(e) {
         show_due_date: document.getElementById('retShowDueDate') ? document.getElementById('retShowDueDate').checked : true,
         color: document.getElementById('retColor') ? document.getElementById('retColor').value : 'orange',
         sim_removal_action: 'notice_only'
-      }).catch(err => console.log('Notice insert skipped:', err.message));
+      });
+      if (noticeError) {
+        console.warn('Notice insert skipped:', noticeError.message);
+      }
     }
     
     // STEP C: Show credentials modal
