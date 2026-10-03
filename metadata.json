@@ -1,0 +1,6 @@
+{
+  "name": "Secure Plug Retailer",
+  "description": "Device EMI Management app for retailers in Pakistan — customer enrollment, device locking, installment tracking, and telematics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Plug Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-height: 100vh; padding-bottom: 90px; -webkit-tap-highlight-color: transparent; }
+.hidden { display: none !important; }
+.glass { background: rgba(19,19,26,0.85); backdrop-filter: blur(16px); border: 1px solid #1f1f2e; border-radius: 20px; }
+.glass-glow { background: rgba(19,19,26,0.9); backdrop-filter: blur(20px); border: 1px solid rgba(255,107,53,0.3); box-shadow: 0 0 40px -5px rgba(255,107,53,0.22), 0 8px 32px rgba(0,0,0,0.6); border-radius: 20px; }
+.btn-primary { background: linear-gradient(135deg, #ff6b35, #ea580c); color: #fff; font-weight: 600; padding: 12px 22px; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s; font-size: 14px; box-shadow: 0 8px 24px -6px rgba(255,107,53,0.4); }
+.btn-primary:hover { transform: translateY(-2px); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary { background: rgba(255,255,255,0.05); color: #fff; font-weight: 500; padding: 10px 16px; border-radius: 12px; border: 1px solid #1f1f2e; cursor: pointer; transition: 0.2s; font-size: 13px; }
+.btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,107,53,0.3); }
+.btn-danger { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 600; }
+.btn-success { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 600; }
+.input-field { background: rgba(255,255,255,0.03); border: 1px solid #1f1f2e; border-radius: 12px; padding: 12px 14px; color: #fff; font-size: 14px; width: 100%; outline: none; transition: 0.2s; }
+.input-field:focus { border-color: #ff6b35; background: rgba(255,107,53,0.05); }
+.input-field::placeholder { color: #6b7280; }
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); padding: 14px 20px; border-radius: 14px; font-size: 14px; font-weight: 500; z-index: 9999; transition: 0.4s; max-width: 90%; box-shadow: 0 12px 32px rgba(0,0,0,0.5); }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast-success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
+.toast-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
+.toast-info { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); color: #a78bfa; }
+.stat-card { padding: 18px; border-radius: 16px; background: linear-gradient(145deg, rgba(19,19,26,0.9), rgba(15,15,20,0.9)); border: 1px solid #1f1f2e; position: relative; overflow: hidden; }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(180deg, #ff6b35, #ea580c); }
+.card-item { background: rgba(19,19,26,0.85); backdrop-filter: blur(16px); border: 1px solid #1f1f2e; border-radius: 16px; padding: 16px; margin-bottom: 12px; transition: 0.3s; cursor: pointer; }
+.card-item:hover { border-color: rgba(255,107,53,0.4); transform: translateY(-2px); }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-success { background: rgba(34,197,94,0.15); color: #4ade80; }
+.badge-danger { background: rgba(239,68,68,0.15); color: #f87171; }
+.badge-warning { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.badge-info { background: rgba(139,92,246,0.15); color: #a78bfa; }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,15,0.95); backdrop-filter: blur(20px); border-top: 1px solid #1f1f2e; padding: 8px 0 max(8px, env(safe-area-inset-bottom)); z-index: 100; display: flex; justify-content: space-around; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; color: #6b7280; font-size: 10px; font-weight: 500; cursor: pointer; transition: 0.2s; border: none; background: none; }
+.nav-item.active { color: #ff6b35; }
+.nav-item svg { width: 20px; height: 20px; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal-content { background: #13131a; border: 1px solid #1f1f2e; border-radius: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 24px; }
+.license-key { font-family: monospace; background: rgba(255,107,53,0.1); color: #ff6b35; padding: 4px 8px; border-radius: 6px; font-size: 11px; display: inline-block; }
+.lockscreen-preview { background: linear-gradient(135deg, #13131a, #1a1a24); border: 2px solid #ff6b35; border-radius: 24px; padding: 24px; text-align: center; }
+.checkbox-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.checkbox-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: #ff6b35; }
+</style>
+</head>
+
+  <body>
+<div id="toast" class="toast"></div>
+
+<!-- LOGIN -->
+<section id="loginSection" class="relative z-10 min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <div class="glass-glow p-8">
+      <div class="flex justify-center mb-6">
+        <div class="w-20 h-20 rounded-3xl flex items-center justify-center" style="background: linear-gradient(135deg, #ff6b35, #22c55e);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4" stroke="#fff"/></svg>
+        </div>
+      </div>
+      <h1 class="text-center text-3xl font-extrabold mb-2" style="background: linear-gradient(to right, #ff6b35, #22c55e); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Secure Plug Admin</h1>
+      <p class="text-center text-sm text-gray-400 mb-7">Device EMI Management Portal</p>
+      <div class="flex items-center gap-3 p-3 mb-6 rounded-2xl" style="background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.15);">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #ff6b35, #22c55e);"><span class="text-xs font-bold">SA</span></div>
+        <div><p class="text-sm font-semibold">👋 Welcome back, Sikandar</p><p class="text-xs" style="color: #22c55e;">● Signed in as Sikandar Ali</p></div>
+      </div>
+      <div id="loginError" class="hidden p-3 mb-4 rounded-xl text-sm" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171;"></div>
+      <div class="space-y-4">
+        <div><label class="block text-xs font-semibold text-gray-400 mb-2">ADMIN EMAIL</label><input type="email" id="email" class="input-field" value="ladla123457ali@gmail.com" required></div>
+        <div><label class="block text-xs font-semibold text-gray-400 mb-2">MASTER PASSWORD</label><input type="password" id="password" class="input-field" placeholder="Enter master password" required></div>
+        <button type="button" id="loginBtn" onclick="handleLogin(event)" class="btn-primary w-full">Sign In to Dashboard</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="dashboardSection" class="app-section hidden relative z-10 p-4">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-5">
+      <div><h2 class="text-2xl font-bold">Dashboard</h2><p class="text-xs text-gray-400">Assalam-o-Alaikum, Sikandar Ali</p></div>
+      <button onclick="handleLogout()" class="btn-secondary">Logout</button>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="stat-card"><p class="text-xs text-gray-400 mb-1">Total Retailers</p><p class="text-2xl font-extrabold" id="statRetailers">0</p></div>
+      <div class="stat-card"><p class="text-xs text-gray-400 mb-1">Total Devices</p><p class="text-2xl font-extrabold" id="statDevices">0</p></div>
+      <div class="stat-card"><p class="text-xs text-gray-400 mb-1">Revenue</p><p class="text-lg font-extrabold" id="statRevenue">Rs 0</p></div>
+      <div class="stat-card"><p class="text-xs text-gray-400 mb-1">Overdue</p><p class="text-2xl font-extrabold" style="color: #ef4444;" id="statOverdue">0</p></div>
+    </div>
+    <div class="glass p-5 mb-4"><h3 class="text-sm font-bold mb-3">📊 Monthly Revenue</h3><div style="height: 180px;"><canvas id="dashChart"></canvas></div></div>
+    <div class="glass p-5"><h3 class="text-sm font-bold mb-3">📈 Recent Payments</h3><div id="recentPayments"><p class="text-xs text-gray-500">Loading...</p></div></div>
+  </div>
+</section>
+
+<!-- RETAILERS -->
+<section id="retailersSection" class="app-section hidden relative z-10 p-4">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-4">
+      <div><h2 class="text-2xl font-bold">Retailers</h2><p class="text-xs text-gray-400" id="retailerCount">Loading...</p></div>
+      <button onclick="openAddRetailerModal()" class="btn-primary py-2.5 px-4 text-sm">+ Add</button>
+    </div>
+    <input type="text" id="searchRetailer" class="input-field mb-4" placeholder="🔍 Search name, city, phone..." oninput="filterRetailers()">
+    <div id="retailersList"><p class="text-center text-gray-500 py-8 text-sm">Loading...</p></div>
+  </div>
+</section>
+
+<!-- RETAILER DETAIL -->
+<section id="retailerDetailSection" class="app-section hidden relative z-10 p-4">
+  <div class="max-w-4xl mx-auto">
+    <button onclick="showSection('retailersSection')" class="btn-secondary mb-4">← Back</button>
+    <div id="retailerDetailContent"><p class="text-center text-gray-500 py-8 text-sm">Loading...</p></div>
+  </div>
+</section>
+
+<!-- DEVICES -->
+<section id="devicesSection" class="app-section hidden relative z-10 p-4">
+  <div class="max-w-4xl mx-auto">
+    <div class="mb-4"><h2 class="text-2xl font-bold">Devices</h2><p class="text-xs text-gray-400" id="deviceCount">Loading...</p></div>
+    <input type="text" id="searchDevice" class="input-field mb-4" placeholder="🔍 Search IMEI or model..." oninput="filterDevices()">
+    <div id="devicesList"><p class="text-center text-gray-500 py-8 text-sm">Loading...</p></div>
+  </div>
+</section>
+
+<!-- PAYMENTS -->
+<section id="paymentsSection" class="app-section hidden relative z-10 p-4">
+  <div class="max-w-4xl mx-auto">
+    <div class="mb-4"><h2 class="text-2xl font-bold">Payments</h2><p class="text-xs text-gray-400" id="paymentCount">Loading...</p><p class="text-lg font-extrabold mt-2" style="color: #22c55e;" id="paymentTotal">Rs 0</p></div>
+    <div id="paymentsList"><p class="text-center text-gray-500 py-8 text-sm">Loading...</p></div>
+  </div>
+</section>
+
+<!-- REPORTS -->
+<section id="reportsSection" class="app-section hidden relative z-10 p-4">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-4"><div><h2 class="text-2xl font-bold">Reports</h2><p class="text-xs text-gray-400">Analytics</p></div><button onclick="exportCSV()" class="btn-secondary">📥 Export</button></div>
+    <div class="glass p-4 mb-4"><h3 class="text-sm font-bold mb-3">📊 Revenue Trend</h3><div style="height: 200px;"><canvas id="reportRevenueChart"></canvas></div></div>
+    <div class="glass p-4 mb-4"><h3 class="text-sm font-bold mb-3">🥧 Device Status</h3><div style="height: 200px;"><canvas id="reportStatusChart"></canvas></div></div>
+    <div class="glass p-4"><h3 class="text-sm font-bold mb-3">🏪 Top Retailers</h3><div id="topRetailers"></div></div>
+  </div>
+</section>
+
+<!-- BOTTOM NAV -->
+<nav id="bottomNav" class="bottom-nav hidden">
+  <button class="nav-item" data-section="dashboardSection" onclick="showSection('dashboardSection')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span>
+  </button>
+  <button class="nav-item" data-section="retailersSection" onclick="showSection('retailersSection')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/></svg><span>Retailers</span>
+  </button>
+  <button class="nav-item" data-section="devicesSection" onclick="showSection('devicesSection')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 18h.01"/></svg><span>Devices</span>
+  </button>
+  <button class="nav-item" data-section="paymentsSection" onclick="showSection('paymentsSection')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span>Payments</span>
+  </button>
+  <button class="nav-item" data-section="reportsSection" onclick="showSection('reportsSection')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg><span>Reports</span>
+  </button>
+</nav>
+
+<!-- ADD RETAILER MODAL -->
+<div id="addRetailerModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('addRetailerModal')">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-lg font-bold">Add New Retailer</h3>
+      <button onclick="closeModal('addRetailerModal')" style="color: #9ca3af; background: none; border: none; font-size: 26px; cursor: pointer;">×</button>
+    </div>
+    <form id="addRetailerForm" onsubmit="handleAddRetailer(event); return false;" class="space-y-3">
+      <p class="text-xs font-bold text-gray-400 mt-2">BUSINESS INFO</p>
+      <input type="text" id="retName" class="input-field" placeholder="Business Name *" required>
+      <input type="text" id="retOwner" class="input-field" placeholder="Owner Name *" required>
+      <input type="email" id="retEmail" class="input-field" placeholder="Email *" required>
+      <div style="position: relative;">
+        <input type="password" id="retPassword" class="input-field" placeholder="Login Password (min 6 chars) *" minlength="6" required style="padding-right: 40px;">
+        <button type="button" onclick="togglePasswordVisibility('retPassword', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 14px;">👁️</button>
+      </div>
+      <div style="position: relative;">
+        <input type="password" id="retConfirmPassword" class="input-field" placeholder="Confirm Password *" minlength="6" required style="padding-right: 40px;">
+        <button type="button" onclick="togglePasswordVisibility('retConfirmPassword', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 14px;">👁️</button>
+      </div>
+      <input type="tel" id="retPhone" class="input-field" placeholder="Phone Number *" required>
+      <input type="tel" id="retWhatsapp" class="input-field" placeholder="WhatsApp (optional)">
+      <input type="text" id="retCity" class="input-field" placeholder="City *" required>
+      <input type="text" id="retAddress" class="input-field" placeholder="Shop Address *" required>
+      <input type="number" id="retLimit" class="input-field" placeholder="Device Limit" value="50">
+      
+      <p class="text-xs font-bold text-gray-400 mt-4">LOCK SCREEN SETTINGS</p>
+      <p class="text-xs text-gray-500 mb-2">Ye customer ke phone par lock hote waqt dikhega</p>
+      
+      <input type="text" id="retLockMsg" class="input-field" placeholder="Lock message (optional)" value="Payment karein, phone unlock ho jayega">
+      
+      <div>
+        <label class="block text-xs text-gray-400 mb-2">Notice Style</label>
+        <select id="retNoticeStyle" class="input-field">
+          <option value="banner">Banner (top bar)</option>
+          <option value="popup">Popup (center dialog)</option>
+          <option value="kiosk">Kiosk (full screen lock)</option>
+        </select>
+      </div>
+      
+      <div>
+        <label class="block text-xs text-gray-400 mb-2">Lock Screen Color</label>
+        <select id="retColor" class="input-field">
+          <option value="orange">Orange (brand)</option>
+          <option value="red">Red (urgent)</option>
+          <option value="green">Green (calm)</option>
+        </select>
+      </div>
+      
+      <div class="mt-3">
+        <label class="block text-xs text-gray-400 mb-2">Show on lock screen:</label>
+        <div class="checkbox-row"><input type="checkbox" id="retShowShopName" checked><label for="retShowShopName" class="text-sm">Show shop name</label></div>
+        <div class="checkbox-row"><input type="checkbox" id="retShowPhone" checked><label for="retShowPhone" class="text-sm">Show phone number</label></div>
+        <div class="checkbox-row"><input type="checkbox" id="retShowDueAmount" checked><label for="retShowDueAmount" class="text-sm">Show due amount</label></div>
+        <div class="checkbox-row"><input type="checkbox" id="retShowDueDate" checked><label for="retShowDueDate" class="text-sm">Show due date</label></div>
+      </div>
+      
+      <div class="flex gap-2 pt-3">
+        <button type="button" onclick="closeModal('addRetailerModal')" class="btn-secondary flex-1">Cancel</button>
+        <button type="submit" class="btn-primary flex-1">Save Retailer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CREDENTIALS MODAL -->
+<div id="credentialsModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('credentialsModal')">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <div style="width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80;">
+        ✓
+      </div>
+      <h3 class="text-lg font-bold">Retailer Created!</h3>
+      <p class="text-xs text-gray-400 mt-1">Share login credentials with retailer</p>
+    </div>
+
+    <div class="glass p-4 space-y-3 mb-5">
+      <div>
+        <p class="text-[11px] text-gray-400">Retailer / Business Name</p>
+        <p class="text-sm font-bold text-white" id="credName">-</p>
+      </div>
+      <div style="border-top: 1px solid #1f1f2e; padding-top: 8px;">
+        <div class="flex items-center justify-between">
+          <div style="min-width: 0; flex: 1;">
+            <p class="text-[11px] text-gray-400">Email (Username)</p>
+            <p class="text-xs font-mono text-white font-semibold truncate" id="credEmail">-</p>
+          </div>
+          <button type="button" onclick="copyToClipboard(document.getElementById('credEmail').textContent)" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;">📋 Copy</button>
+        </div>
+      </div>
+      <div style="border-top: 1px solid #1f1f2e; padding-top: 8px;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-gray-400">Password</p>
+            <p class="text-xs font-mono font-bold" style="color: #ff6b35;" id="credPassword">-</p>
+          </div>
+          <button type="button" onclick="copyToClipboard(document.getElementById('credPassword').textContent)" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;">📋 Copy</button>
+        </div>
+      </div>
+      <div style="border-top: 1px solid #1f1f2e; padding-top: 8px;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-gray-400">License Key</p>
+            <span class="license-key" id="credLicense">-</span>
+          </div>
+          <button type="button" onclick="copyToClipboard(document.getElementById('credLicense').textContent)" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;">📋 Copy</button>
+        </div>
+      </div>
+      <input type="hidden" id="credPhone" value="">
+    </div>
+
+    <div class="space-y-2">
+      <button type="button" onclick="sendCredentialsWhatsApp()" class="btn-primary w-full flex items-center justify-center gap-2" style="background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 8px 24px -6px rgba(34,197,94,0.4);">
+        <span>💬 Send via WhatsApp</span>
+      </button>
+      <button type="button" onclick="closeModal('credentialsModal')" class="btn-secondary w-full">
+        Done
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- INCREASE LIMIT MODAL -->
+<div id="increaseLimitModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('increaseLimitModal')">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-lg font-bold">Increase Device Limit</h3>
+      <button onclick="closeModal('increaseLimitModal')" style="color: #9ca3af; background: none; border: none; font-size: 26px; cursor: pointer;">×</button>
+    </div>
+    <p class="text-xs text-gray-400 mb-4">Add more device slots for this retailer</p>
+    <form id="increaseLimitForm" onsubmit="handleIncreaseLimit(event); return false;" class="space-y-3">
+      <input type="hidden" id="limitRetailerId">
+      <p class="text-xs text-gray-500">Current limit: <span id="currentLimit" class="text-white font-bold">0</span></p>
+      <input type="number" id="addLimit" class="input-field" placeholder="Add devices (e.g., 25)" min="1" required>
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="closeModal('increaseLimitModal')" class="btn-secondary flex-1">Cancel</button>
+        <button type="submit" class="btn-primary flex-1">Update Limit</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+    <script>
+console.log('🚀 Admin starting...');
+
+const SUPABASE_URL = 'https://rmqqhbcvvuojvlefuzjd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_9yaDkS_CNmZyFsbjFl3U_Q_0J24yWgm';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage }
+});
+
+let allRetailers = [];
+let allDevices = [];
+let allPayments = [];
+let currentRetailer = null;
+let dashChartInstance = null;
+let reportRevenueInstance = null;
+let reportStatusInstance = null;
+
+// UTILS
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show toast-' + (type || 'info');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+function showError(msg) { const e = document.getElementById('loginError'); if (e) { e.textContent = msg; e.classList.remove('hidden'); } showToast(msg, 'error'); }
+function hideError() { const e = document.getElementById('loginError'); if (e) e.classList.add('hidden'); }
+function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+function generateLicenseKey() { const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let k = 'SP-'; for (let i = 0; i < 12; i++) k += c.charAt(Math.floor(Math.random() * c.length)); return k; }
+function copyToClipboard(text) { if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showToast('Copied!', 'success')); else showToast(text, 'info'); }
+function formatDate(d) { if (!d) return 'N/A'; return new Date(d).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }); }
+function formatCurrency(n) { const num = Number(n) || 0; if (num >= 1000000) return 'Rs ' + (num/1000000).toFixed(2) + 'M'; if (num >= 1000) return 'Rs ' + (num/1000).toFixed(1) + 'K'; return 'Rs ' + num.toLocaleString(); }
+
+// SECTION SWITCH
+function showSection(id) {
+  document.querySelectorAll('.app-section').forEach(s => s.classList.add('hidden'));
+  document.getElementById('loginSection').classList.add('hidden');
+  const t = document.getElementById(id);
+  if (t) { t.classList.remove('hidden'); t.classList.add('app-section'); }
+  const nav = document.getElementById('bottomNav');
+  if (id === 'loginSection') nav.classList.add('hidden');
+  else nav.classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.section === id));
+  if (id === 'dashboardSection') loadDashboard();
+  if (id === 'retailersSection') loadRetailers();
+  if (id === 'devicesSection') loadDevices();
+  if (id === 'paymentsSection') loadPayments();
+  if (id === 'reportsSection') loadReports();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// LOGIN
+async function handleLogin(e) {
+  if (e) e.preventDefault();
+  hideError();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('loginBtn');
+  if (!email || !password) { showError('Enter email and password'); return; }
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  try {
+    const r = await sb.auth.signInWithPassword({ email, password });
+    if (r.error) { showError(r.error.message); btn.disabled = false; btn.textContent = 'Sign In to Dashboard'; return; }
+    if (r.data && r.data.session) {
+      const p = await sb.from('profiles').select('*').eq('id', r.data.user.id).maybeSingle();
+      if (!p.data || p.data.role !== 'master_admin') { showError('Access Denied'); await sb.auth.signOut(); btn.disabled = false; btn.textContent = 'Sign In to Dashboard'; return; }
+      showToast('Welcome, ' + (p.data.full_name || 'Sikandar'), 'success');
+      showSection('dashboardSection');
+    }
+  } catch (err) { showError('Error: ' + err.message); btn.disabled = false; btn.textContent = 'Sign In to Dashboard'; }
+}
+
+async function handleLogout() { await sb.auth.signOut(); document.getElementById('password').value = ''; showSection('loginSection'); showToast('Logged out', 'info'); }
+
+// DASHBOARD
+async function loadDashboard() {
+  try {
+    const r1 = await sb.from('businesses').select('*', { count: 'exact', head: true });
+    setText('statRetailers', r1.count || 0);
+    const r2 = await sb.from('devices').select('*', { count: 'exact', head: true });
+    setText('statDevices', r2.count || 0);
+    const r3 = await sb.from('payments').select('amount, payment_date');
+    let total = 0;
+    if (r3.data) r3.data.forEach(p => total += Number(p.amount) || 0);
+    setText('statRevenue', formatCurrency(total));
+    const r4 = await sb.from('emi_plans').select('*', { count: 'exact', head: true }).eq('status', 'defaulted');
+    setText('statOverdue', r4.count || 0);
+    const months = ['Jun','Jul','Aug','Sep','Oct','Nov'];
+    const data = [0,0,0,0,0,0];
+    if (r3.data) {
+      const now = new Date();
+      r3.data.forEach(p => {
+        if (!p.payment_date) return;
+        const d = new Date(p.payment_date);
+        const diff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+        if (diff >= 0 && diff < 6) data[5 - diff] += Number(p.amount) || 0;
+      });
+    }
+    if (dashChartInstance) dashChartInstance.destroy();
+    const ctx = document.getElementById('dashChart');
+    if (ctx) dashChartInstance = new Chart(ctx, { type: 'line', data: { labels: months, datasets: [{ label: 'Revenue', data, borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.1)', tension: 0.4, fill: true, borderWidth: 2.5, pointBackgroundColor: '#ff6b35' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#6b7280', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#6b7280', font: { size: 10 } }, grid: { display: false } } } } });
+    const rec = await sb.from('payments').select('*').order('payment_date', { ascending: false }).limit(3);
+    const recEl = document.getElementById('recentPayments');
+    if (rec.data && rec.data.length > 0) recEl.innerHTML = rec.data.map(p => '<div class="flex items-center justify-between py-2" style="border-bottom: 1px solid #1f1f2e;"><div><p class="text-xs text-gray-400">' + formatDate(p.payment_date) + '</p><p class="text-xs text-gray-500">' + (p.payment_method || 'Cash') + '</p></div><p class="text-sm font-bold" style="color: #22c55e;">' + formatCurrency(p.amount) + '</p></div>').join('');
+    else recEl.innerHTML = '<p class="text-xs text-gray-500">No payments yet</p>';
+  } catch (err) { console.error(err); }
+}
+
+// RETAILERS
+async function loadRetailers() {
+  const list = document.getElementById('retailersList');
+  list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
+  try {
+    const r = await sb.from('businesses').select('*').order('created_at', { ascending: false });
+    if (r.error) throw r.error;
+    allRetailers = r.data || [];
+    setText('retailerCount', allRetailers.length + ' retailer' + (allRetailers.length !== 1 ? 's' : ''));
+    if (allRetailers.length === 0) { list.innerHTML = '<div class="glass p-8 text-center"><p class="text-gray-400 mb-4">No retailers yet</p><button onclick="openAddRetailerModal()" class="btn-primary py-2.5 px-6">+ Add First Retailer</button></div>'; return; }
+    renderRetailers(allRetailers);
+  } catch (err) { list.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>'; }
+}
+
+function filterRetailers() {
+  const q = document.getElementById('searchRetailer').value.toLowerCase();
+  const f = allRetailers.filter(r => (r.name||'').toLowerCase().includes(q) || (r.owner_name||'').toLowerCase().includes(q) || (r.city||'').toLowerCase().includes(q) || (r.phone||'').toLowerCase().includes(q));
+  renderRetailers(f);
+}
+
+function renderRetailers(rs) {
+  const list = document.getElementById('retailersList');
+  if (rs.length === 0) { list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">No matching retailers</p>'; return; }
+  list.innerHTML = rs.map(r => {
+    const init = (r.name || 'R').substring(0, 2).toUpperCase();
+    const active = r.is_active !== false;
+    return '<div class="card-item" onclick="viewRetailer(\'' + r.id + '\')">' +
+      '<div class="flex items-start gap-3">' +
+        '<div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm" style="background: linear-gradient(135deg, #ff6b35, #8b5cf6);">' + init + '</div>' +
+        '<div class="flex-1 min-w-0">' +
+          '<div class="flex items-start justify-between gap-2 mb-1">' +
+            '<h3 class="font-bold text-sm truncate">' + (r.name || 'Unnamed') + '</h3>' +
+            '<span class="badge ' + (active ? 'badge-success' : 'badge-danger') + '">' + (active ? 'Active' : 'Suspended') + '</span>' +
+          '</div>' +
+          '<p class="text-xs text-gray-400 mb-0.5">👤 ' + (r.owner_name || 'N/A') + '</p>' +
+          '<p class="text-xs text-gray-500">📍 ' + (r.city || 'N/A') + ' • 📞 ' + (r.phone || 'N/A') + '</p>' +
+          '<p class="text-xs mt-2" style="color: #ff6b35;">Tap to view details →</p>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openAddRetailerModal() {
+  document.getElementById('addRetailerForm').reset();
+  document.getElementById('retLimit').value = '50';
+  document.getElementById('retLockMsg').value = 'Payment karein, phone unlock ho jayega';
+  document.getElementById('retShowShopName').checked = true;
+  document.getElementById('retShowPhone').checked = true;
+  document.getElementById('retShowDueAmount').checked = true;
+  document.getElementById('retShowDueDate').checked = true;
+  openModal('addRetailerModal');
+}
+
+async function handleAddRetailer(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('retEmail').value.trim();
+  const password = document.getElementById('retPassword').value;
+  const confirmPassword = document.getElementById('retConfirmPassword').value;
+  
+  if (!password || password.length < 6) {
+    showToast('Password must be 6+ characters', 'error');
+    return;
+  }
+  if (password !== confirmPassword) {
+    showToast('Passwords do not match', 'error');
+    return;
+  }
+  
+  try {
+    // STEP A: Create Supabase Auth user
+    const { data: authData, error: authError } = 
+      await sb.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            full_name: document.getElementById('retOwner').value.trim(),
+            role: 'retailer',
+            business_name: document.getElementById('retName').value.trim()
+          }
+        }
+      });
+    
+    if (authError) {
+      showToast('Auth error: ' + authError.message, 'error');
+      return;
+    }
+    
+    // STEP B: Insert into businesses
+    const { data: business, error: bizError } = await sb
+      .from('businesses')
+      .insert({
+        name: document.getElementById('retName').value.trim(),
+        owner_name: document.getElementById('retOwner').value.trim(),
+        email: email,
+        phone: document.getElementById('retPhone').value.trim(),
+        whatsapp: (document.getElementById('retWhatsapp') ? document.getElementById('retWhatsapp').value.trim() : '') || document.getElementById('retPhone').value.trim(),
+        city: document.getElementById('retCity').value.trim(),
+        address: document.getElementById('retAddress').value.trim(),
+        license_key: generateLicenseKey(),
+        device_limit: parseInt(document.getElementById('retLimit').value) || 50,
+        is_active: true,
+        auth_user_id: (authData && authData.user) ? authData.user.id : null
+      })
+      .select()
+      .single();
+    
+    if (bizError) {
+      showToast('Business error: ' + bizError.message, 'error');
+      return;
+    }
+    
+    // Insert notice settings if present
+    const noticeStyleEl = document.getElementById('retNoticeStyle');
+    if (noticeStyleEl && business && business.id) {
+      await sb.from('notices').insert({
+        business_id: business.id,
+        notice_style: noticeStyleEl.value,
+        show_due_amount: document.getElementById('retShowDueAmount') ? document.getElementById('retShowDueAmount').checked : true,
+        show_shop_name: document.getElementById('retShowShopName') ? document.getElementById('retShowShopName').checked : true,
+        show_phone: document.getElementById('retShowPhone') ? document.getElementById('retShowPhone').checked : true,
+        show_due_date: document.getElementById('retShowDueDate') ? document.getElementById('retShowDueDate').checked : true,
+        color: document.getElementById('retColor') ? document.getElementById('retColor').value : 'orange',
+        sim_removal_action: 'notice_only'
+      }).catch(err => console.log('Notice insert skipped:', err.message));
+    }
+    
+    // STEP C: Show credentials modal
+    showCredentialsModal({
+      name: business.name,
+      email: email,
+      password: password,
+      phone: business.phone || business.whatsapp,
+      license_key: business.license_key
+    });
+    
+    closeModal('addRetailerModal');
+    const form = document.getElementById('addRetailerForm');
+    if (form) form.reset();
+    loadRetailers();
+    
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+}
+
+function showCredentialsModal(data) {
+  document.getElementById('credEmail').textContent = data.email;
+  document.getElementById('credPassword').textContent = data.password;
+  document.getElementById('credLicense').textContent = data.license_key;
+  document.getElementById('credPhone').value = data.phone;
+  document.getElementById('credName').textContent = data.name;
+  window._credData = data;
+  openModal('credentialsModal');
+}
+
+function sendCredentialsWhatsApp() {
+  const data = window._credData;
+  if (!data) return;
+  
+  const phone = (data.phone || '').replace(/\D/g, '');
+  const phoneWithCode = phone.startsWith('92') ? phone : '92' + phone;
+  
+  const message = 'Assalam-o-Alaikum ' + data.name + '!\n\n' +
+    'Aap ka Secure Plug Retailer account ready hai.\n\n' +
+    '📱 App: https://sikandarali7711-hue.github.io/secureplug-retailer/\n\n' +
+    '📧 Email: ' + data.email + '\n' +
+    '🔒 Password: ' + data.password + '\n\n' +
+    'Steps:\n' +
+    '1. App kholein\n' +
+    '2. Email + Password daalein\n' +
+    '3. Sign In dabayein\n' +
+    '4. Dashboard khulega\n\n' +
+    'Shukriya!';
+  
+  const url = 'https://wa.me/' + phoneWithCode + '?text=' + encodeURIComponent(message);
+  window.open(url, '_blank');
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  if (el.type === 'password') {
+    el.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    el.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
+async function handleResetRetailerPassword(retailerId) {
+  const r = allRetailers.find(x => x.id === retailerId) || currentRetailer;
+  if (!r || !r.email) {
+    showToast('Retailer email not found', 'error');
+    return;
+  }
+  if (!confirm('Send a Supabase password reset link to ' + r.email + '?')) return;
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(r.email);
+    if (error) throw error;
+    showToast('Password reset link sent to ' + r.email, 'success');
+  } catch (err) {
+    showToast('Reset error: ' + err.message, 'error');
+  }
+}
+
+function handleResendRetailerCredentials(retailerId) {
+  const r = allRetailers.find(x => x.id === retailerId) || currentRetailer;
+  if (!r) return;
+  const pwd = prompt('Enter password to send to ' + r.name + ' (leave empty if unchanged):', '') || '••••••••';
+  showCredentialsModal({
+    name: r.name || 'Retailer',
+    email: r.email || '',
+    password: pwd,
+    phone: r.phone || r.whatsapp || '',
+    license_key: r.license_key || ''
+  });
+}
+
+// RETAILER DETAIL
+async function viewRetailer(id) {
+  currentRetailer = allRetailers.find(r => r.id === id);
+  if (!currentRetailer) return;
+  showSection('retailerDetailSection');
+  const content = document.getElementById('retailerDetailContent');
+  content.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
+  try {
+    const [custR, devR] = await Promise.all([
+      sb.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', id),
+      sb.from('devices').select('*', { count: 'exact', head: true }).eq('business_id', id)
+    ]);
+    const custCount = custR.count || 0;
+    const devCount = devR.count || 0;
+    const limit = currentRetailer.device_limit || 50;
+    const remaining = limit - devCount;
+    const init = (currentRetailer.name || 'R').substring(0, 2).toUpperCase();
+    const active = currentRetailer.is_active !== false;
+    
+    content.innerHTML = 
+      // Header
+      '<div class="glass p-5 mb-4">' +
+        '<div class="flex items-start gap-3">' +
+          '<div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 font-bold" style="background: linear-gradient(135deg, #ff6b35, #8b5cf6);">' + init + '</div>' +
+          '<div class="flex-1 min-w-0">' +
+            '<h2 class="text-xl font-bold mb-1">' + (currentRetailer.name || 'Unnamed') + '</h2>' +
+            '<p class="text-xs text-gray-400 mb-1">👤 ' + (currentRetailer.owner_name || 'N/A') + '</p>' +
+            '<span class="badge ' + (active ? 'badge-success' : 'badge-danger') + '">' + (active ? 'Active' : 'Suspended') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="mt-4 pt-4" style="border-top: 1px solid #1f1f2e;">' +
+          '<p class="text-xs text-gray-400 mb-1">📧 ' + (currentRetailer.email || 'N/A') + '</p>' +
+          '<p class="text-xs text-gray-400 mb-1">📞 ' + (currentRetailer.phone || 'N/A') + '</p>' +
+          '<p class="text-xs text-gray-400 mb-1">📍 ' + (currentRetailer.address || 'N/A') + ', ' + (currentRetailer.city || '') + '</p>' +
+          '<p class="text-xs text-gray-400 mb-2">🔑 License: <span class="license-key">' + (currentRetailer.license_key || 'N/A') + '</span> <button onclick="copyToClipboard(\'' + (currentRetailer.license_key || '') + '\')" style="color: #ff6b35; background: none; border: none; cursor: pointer;">📋</button></p>' +
+        '</div>' +
+      '</div>' +
+      
+      // Usage stats
+      '<div class="grid grid-cols-2 gap-3 mb-4">' +
+        '<div class="stat-card"><p class="text-xs text-gray-400 mb-1">Customers</p><p class="text-2xl font-extrabold">' + custCount + '</p></div>' +
+        '<div class="stat-card"><p class="text-xs text-gray-400 mb-1">Devices Used</p><p class="text-2xl font-extrabold">' + devCount + '</p></div>' +
+        '<div class="stat-card"><p class="text-xs text-gray-400 mb-1">Device Limit</p><p class="text-2xl font-extrabold">' + limit + '</p></div>' +
+        '<div class="stat-card"><p class="text-xs text-gray-400 mb-1">Available</p><p class="text-2xl font-extrabold" style="color: ' + (remaining > 10 ? '#22c55e' : '#f59e0b') + ';">' + remaining + '</p></div>' +
+      '</div>' +
+      
+      // Action buttons
+      '<div class="grid grid-cols-2 gap-2 mb-2">' +
+        '<button onclick="openIncreaseLimit(\'' + id + '\', ' + limit + ')" class="btn-primary">+ Add Devices</button>' +
+        '<button onclick="toggleRetailer(\'' + id + '\', ' + active + ')" class="btn-secondary">' + (active ? 'Suspend' : 'Activate') + '</button>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 mb-4">' +
+        '<button onclick="handleResetRetailerPassword(\'' + id + '\')" class="btn-secondary" style="border-color: rgba(245,158,11,0.3); color: #fbbf24; font-size: 12px;">🔑 Reset Password</button>' +
+        '<button onclick="handleResendRetailerCredentials(\'' + id + '\')" class="btn-secondary" style="border-color: rgba(34,197,94,0.3); color: #4ade80; font-size: 12px;">💬 Resend Credentials</button>' +
+      '</div>' +
+      
+      // Lock screen preview
+      '<div class="glass p-5 mb-4">' +
+        '<h3 class="text-sm font-bold mb-3">📱 Lock Screen Preview</h3>' +
+        '<p class="text-xs text-gray-500 mb-3">Customer ke phone par aise dikhega:</p>' +
+        '<div class="lockscreen-preview">' +
+          '<p class="text-lg font-bold mb-4" style="color: #ff6b35;">🔒 DEVICE LOCKED</p>' +
+          '<p class="text-xs text-gray-400 mb-4">Ye phone EMI par hai</p>' +
+          '<p class="text-base font-bold mb-1">' + (currentRetailer.name || 'Shop Name') + '</p>' +
+          '<p class="text-sm mb-1">📞 ' + (currentRetailer.phone || 'N/A') + '</p>' +
+          '<p class="text-xs text-gray-400 mb-4">📍 ' + (currentRetailer.address || 'N/A') + '</p>' +
+          '<div style="border-top: 1px solid rgba(255,107,53,0.3); padding-top: 16px;">' +
+            '<p class="text-base font-bold mb-1" style="color: #ef4444;">💰 Due: Rs 12,500</p>' +
+            '<p class="text-xs text-gray-400">📅 Due: 15-Oct-2026</p>' +
+          '</div>' +
+          '<div class="flex gap-2 mt-4">' +
+            '<button class="btn-primary flex-1 py-2 text-xs">📞 Call</button>' +
+            '<button class="btn-primary flex-1 py-2 text-xs">💬 WhatsApp</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      
+      // Delete button
+      '<button onclick="deleteRetailer(\'' + id + '\')" class="btn-danger w-full py-3">Delete Retailer</button>';
+  } catch (err) {
+    content.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>';
+  }
+}
+
+function openIncreaseLimit(id, currentLimit) {
+  document.getElementById('limitRetailerId').value = id;
+  document.getElementById('currentLimit').textContent = currentLimit;
+  document.getElementById('addLimit').value = '';
+  openModal('increaseLimitModal');
+}
+
+async function handleIncreaseLimit(e) {
+  e.preventDefault();
+  const id = document.getElementById('limitRetailerId').value;
+  const add = parseInt(document.getElementById('addLimit').value) || 0;
+  if (add <= 0) { showToast('Enter valid number', 'error'); return; }
+  try {
+    const current = currentRetailer.device_limit || 50;
+    const newLimit = current + add;
+    const r = await sb.from('businesses').update({ device_limit: newLimit }).eq('id', id);
+    if (r.error) throw r.error;
+    currentRetailer.device_limit = newLimit;
+    showToast('Limit increased by ' + add + '!', 'success');
+    closeModal('increaseLimitModal');
+    viewRetailer(id);
+    loadRetailers();
+  } catch (err) { showToast('Error: ' + err.message, 'error'); }
+}
+
+async function toggleRetailer(id, active) {
+  try {
+    const r = await sb.from('businesses').update({ is_active: !active }).eq('id', id);
+    if (r.error) throw r.error;
+    showToast(active ? 'Suspended' : 'Activated', 'success');
+    loadRetailers();
+    if (currentRetailer && currentRetailer.id === id) {
+      currentRetailer.is_active = !active;
+      viewRetailer(id);
+    }
+  } catch (err) { showToast('Error: ' + err.message, 'error'); }
+}
+
+async function deleteRetailer(id) {
+  if (!confirm('Delete this retailer? This cannot be undone.')) return;
+  try {
+    const r = await sb.from('businesses').delete().eq('id', id);
+    if (r.error) throw r.error;
+    showToast('Deleted', 'success');
+    showSection('retailersSection');
+    loadRetailers();
+  } catch (err) { showToast('Error: ' + err.message, 'error'); }
+}
+
+// DEVICES
+async function loadDevices() {
+  const list = document.getElementById('devicesList');
+  list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
+  try {
+    const r = await sb.from('devices').select('*').order('created_at', { ascending: false });
+    if (r.error) throw r.error;
+    allDevices = r.data || [];
+    setText('deviceCount', allDevices.length + ' device' + (allDevices.length !== 1 ? 's' : ''));
+    if (allDevices.length === 0) { list.innerHTML = '<div class="glass p-8 text-center"><p class="text-gray-400">No devices yet</p><p class="text-xs text-gray-500 mt-2">Devices appear when retailers enroll them</p></div>'; return; }
+    renderDevices(allDevices);
+  } catch (err) { list.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>'; }
+}
+
+function filterDevices() {
+  const q = document.getElementById('searchDevice').value.toLowerCase();
+  const f = allDevices.filter(d => (d.imei||'').toLowerCase().includes(q) || (d.model||'').toLowerCase().includes(q));
+  renderDevices(f);
+}
+
+function renderDevices(ds) {
+  const list = document.getElementById('devicesList');
+  if (ds.length === 0) { list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">No devices found</p>'; return; }
+  list.innerHTML = ds.map(d => {
+    const locked = d.is_locked === true;
+    return '<div class="card-item" style="cursor: default;">' +
+      '<div class="flex items-start justify-between gap-2 mb-2">' +
+        '<div class="min-w-0"><h3 class="font-bold text-sm truncate">' + (d.model || 'Unknown') + '</h3><p class="text-[11px] text-gray-500 font-mono">IMEI: ' + (d.imei || 'N/A') + '</p></div>' +
+        '<span class="badge ' + (locked ? 'badge-danger' : 'badge-success') + '">' + (locked ? '🔒 Locked' : '✓ Active') + '</span>' +
+      '</div>' +
+      (d.purchase_price ? '<p class="text-xs text-gray-400 mb-2">💰 ' + formatCurrency(d.purchase_price) + '</p>' : '') +
+      '<button onclick="sendCommand(\'' + d.id + '\', \'' + (locked ? 'UNLOCK' : 'LOCK') + '\')" class="' + (locked ? 'btn-success' : 'btn-danger') + ' w-full mt-2">' + (locked ? '🔓 Unlock' : '🔒 Lock') + '</button>' +
+    '</div>';
+  }).join('');
+}
+
+async function sendCommand(deviceId, type) {
+  if (!confirm(type + ' this device?')) return;
+  try {
+    await sb.from('device_commands').insert({ device_id: deviceId, command_type: type, status: 'pending', issued_at: new Date().toISOString() });
+    await sb.from('devices').update({ is_locked: type === 'LOCK' }).eq('id', deviceId);
+    showToast(type + ' command sent!', 'success');
+    loadDevices();
+  } catch (err) { showToast('Error: ' + err.message, 'error'); }
+}
+
+// PAYMENTS
+async function loadPayments() {
+  const list = document.getElementById('paymentsList');
+  list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
+  try {
+    const r = await sb.from('payments').select('*').order('payment_date', { ascending: false }).limit(100);
+    if (r.error) throw r.error;
+    allPayments = r.data || [];
+    let total = 0;
+    allPayments.forEach(p => total += Number(p.amount) || 0);
+    setText('paymentCount', allPayments.length + ' payment' + (allPayments.length !== 1 ? 's' : ''));
+    setText('paymentTotal', formatCurrency(total));
+    if (allPayments.length === 0) { list.innerHTML = '<div class="glass p-8 text-center"><p class="text-gray-400">No payments yet</p></div>'; return; }
+    list.innerHTML = allPayments.map(p => '<div class="card-item" style="cursor: default;"><div class="flex items-center justify-between gap-3"><div class="min-w-0 flex-1"><p class="text-[11px] text-gray-500 font-mono mb-1">' + (p.receipt_number || 'TRX-' + (p.id||'').substring(0,8)) + '</p><p class="text-lg font-bold" style="color: #22c55e;">' + formatCurrency(p.amount) + '</p><div class="flex items-center gap-2 mt-1"><span class="badge badge-warning">' + (p.payment_method || 'Cash') + '</span><span class="text-[11px] text-gray-400">' + formatDate(p.payment_date) + '</span></div></div><span class="badge badge-success">✓</span></div></div>').join('');
+  } catch (err) { list.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>'; }
+}
+
+// REPORTS
+async function loadReports() {
+  const r = await sb.from('payments').select('amount, payment_date');
+  const months = ['Jun','Jul','Aug','Sep','Oct','Nov'];
+  const data = [0,0,0,0,0,0];
+  if (r.data) {
+    const now = new Date();
+    r.data.forEach(p => {
+      if (!p.payment_date) return;
+      const d = new Date(p.payment_date);
+      const diff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+      if (diff >= 0 && diff < 6) data[5 - diff] += Number(p.amount) || 0;
+    });
+  }
+  if (reportRevenueInstance) reportRevenueInstance.destroy();
+  const ctx1 = document.getElementById('reportRevenueChart');
+  if (ctx1) reportRevenueInstance = new Chart(ctx1, { type: 'bar', data: { labels: months, datasets: [{ label: 'Revenue', data, backgroundColor: '#ff6b35', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#6b7280', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#6b7280', font: { size: 10 } }, grid: { display: false } } } } });
+  const devR = await sb.from('devices').select('is_locked');
+  let locked = 0, active = 0;
+  if (devR.data) devR.data.forEach(d => { if (d.is_locked) locked++; else active++; });
+  if (reportStatusInstance) reportStatusInstance.destroy();
+  const ctx2 = document.getElementById('reportStatusChart');
+  if (ctx2) reportStatusInstance = new Chart(ctx2, { type: 'doughnut', data: { labels: ['Active', 'Locked'], datasets: [{ data: [active, locked], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#a0a0b0', font: { size: 11 }, padding: 12, usePointStyle: true } } } } });
+  const bizR = await sb.from('businesses').select('name, city');
+  const topEl = document.getElementById('topRetailers');
+  if (bizR.data && bizR.data.length > 0) topEl.innerHTML = bizR.data.slice(0, 5).map((b, i) => '<div class="flex items-center gap-3 py-2" style="border-bottom: 1px solid #1f1f2e;"><div class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs" style="background: linear-gradient(135deg, #ff6b35, #8b5cf6);">' + (i+1) + '</div><div class="flex-1"><p class="text-sm font-semibold">' + b.name + '</p><p class="text-xs text-gray-500">' + (b.city || 'N/A') + '</p></div></div>').join('');
+  else topEl.innerHTML = '<p class="text-xs text-gray-500">No retailers yet</p>';
+}
+
+function exportCSV() {
+  let csv = 'Type,Name,City,Amount,Date\n';
+  allRetailers.forEach(r => csv += 'Retailer,' + (r.name||'') + ',' + (r.city||'') + ',,\n');
+  allPayments.forEach(p => csv += 'Payment,,' + ',' + (p.amount||0) + ',' + (p.payment_date||'') + '\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'secureplug-export.csv'; a.click();
+  showToast('Exported!', 'success');
+}
+
+// SESSION
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const s = await sb.auth.getSession();
+    if (s.data && s.data.session) {
+      const p = await sb.from('profiles').select('*').eq('id', s.data.session.user.id).maybeSingle();
+      if (p.data && p.data.role === 'master_admin') { showSection('dashboardSection'); return; }
+    }
+    showSection('loginSection');
+  } catch (err) { showSection('loginSection'); }
+});
+</script>
+</body>
+</html>
