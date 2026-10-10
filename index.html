@@ -24,7 +24,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 .input-field { background: rgba(255,255,255,0.03); border: 1px solid #1f1f2e; border-radius: 12px; padding: 12px 14px; color: #fff; font-size: 14px; width: 100%; outline: none; transition: 0.2s; }
 .input-field:focus { border-color: #ff6b35; background: rgba(255,107,53,0.05); }
 .input-field::placeholder { color: #6b7280; }
-.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); padding: 14px 20px; border-radius: 14px; font-size: 14px; font-weight: 500; z-index: 9999; transition: 0.4s; max-width: 90%; box-shadow: 0 12px 32px rgba(0,0,0,0.5); }
+.toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-100px); padding: 14px 20px; border-radius: 14px; font-size: 14px; font-weight: 500; z-index: 9999; transition: 0.4s; max-width: 90%; box-shadow: 0 12px 32px rgba(0,0,0,0.5); }
 .toast.show { transform: translateX(-50%) translateY(0); }
 .toast-success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
 .toast-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
@@ -45,16 +45,24 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .modal-content { background: #13131a; border: 1px solid #1f1f2e; border-radius: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 24px; }
 .license-key { font-family: monospace; background: rgba(255,107,53,0.1); color: #ff6b35; padding: 4px 8px; border-radius: 6px; font-size: 11px; display: inline-block; }
-.debug-bar { position: fixed; top: 0; left: 0; right: 0; background: #1a1a24; border-bottom: 2px solid #ff6b35; padding: 6px 12px; font-family: monospace; font-size: 10px; color: #4ade80; z-index: 9999; text-align: center; }
+/* Debug Panel */
+#debugPanel { position: fixed; top: 0; left: 0; right: 0; background: #0a0a0f; border-bottom: 2px solid #ff6b35; padding: 8px 12px; z-index: 9999; font-family: 'Courier New', monospace; font-size: 10px; max-height: 50vh; overflow-y: auto; display: none; }
+#debugPanel.show { display: block; }
+#debugPanel .debug-line { padding: 2px 0; color: #4ade80; }
+#debugPanel .debug-line.error { color: #f87171; }
+#debugPanel .debug-line.warn { color: #fbbf24; }
+#debugPanel .debug-line.info { color: #60a5fa; }
+#debugToggle { position: fixed; top: 8px; right: 8px; z-index: 10000; background: #ff6b35; color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(255,107,53,0.5); }
 </style>
 </head>
 
 <body>
+<button id="debugToggle" onclick="toggleDebug()">🐛</button>
+<div id="debugPanel"></div>
 <div id="toast" class="toast"></div>
-<div id="debugBar" class="debug-bar">Initializing...</div>
 
 <!-- LOGIN -->
-<section id="loginSection" class="relative z-10 min-h-screen flex items-center justify-center p-4" style="padding-top: 40px;">
+<section id="loginSection" class="relative z-10 min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-md">
     <div class="glass-glow p-8">
       <div class="flex justify-center mb-6">
@@ -70,16 +78,16 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
         <div><label class="block text-xs font-semibold text-gray-400 mb-2">MASTER PASSWORD</label><input type="password" id="password" class="input-field" placeholder="Enter master password" required></div>
         <button type="button" id="loginBtn" onclick="handleLogin(event)" class="btn-primary w-full">Sign In to Dashboard</button>
       </div>
-      <p class="text-center text-[10px] text-gray-500 mt-4">v3.0 — Direct UID match</p>
+      <p class="text-center text-[10px] text-gray-500 mt-4">v4.0 — Raw REST API</p>
     </div>
   </div>
 </section>
 
 <!-- DASHBOARD -->
-<section id="dashboardSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
+<section id="dashboardSection" class="app-section hidden relative z-10 p-4">
   <div class="max-w-4xl mx-auto">
     <div class="flex items-center justify-between mb-5">
-      <div><h2 class="text-2xl font-bold">Dashboard</h2><p class="text-xs text-gray-400">Assalam-o-Alaikum, Admin</p></div>
+      <div><h2 class="text-2xl font-bold">Dashboard</h2><p class="text-xs text-gray-400">Welcome, Admin</p></div>
       <button onclick="handleLogout()" class="btn-secondary">Logout</button>
     </div>
     <div class="grid grid-cols-2 gap-3 mb-4">
@@ -94,7 +102,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </section>
 
 <!-- RETAILERS -->
-<section id="retailersSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
+<section id="retailersSection" class="app-section hidden relative z-10 p-4">
   <div class="max-w-4xl mx-auto">
     <div class="flex items-center justify-between mb-4">
       <div><h2 class="text-2xl font-bold">Retailers</h2><p class="text-xs text-gray-400" id="retailerCount">Loading...</p></div>
@@ -106,7 +114,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </section>
 
 <!-- RETAILER DETAIL -->
-<section id="retailerDetailSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
+<section id="retailerDetailSection" class="app-section hidden relative z-10 p-4">
   <div class="max-w-4xl mx-auto">
     <button onclick="showSection('retailersSection')" class="btn-secondary mb-4">← Back</button>
     <div id="retailerDetailContent"><p class="text-center text-gray-500 py-8 text-sm">Loading...</p></div>
@@ -114,7 +122,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </section>
 
 <!-- DEVICES -->
-<section id="devicesSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
+<section id="devicesSection" class="app-section hidden relative z-10 p-4">
   <div class="max-w-4xl mx-auto">
     <div class="mb-4"><h2 class="text-2xl font-bold">Devices</h2><p class="text-xs text-gray-400" id="deviceCount">Loading...</p></div>
     <input type="text" id="searchDevice" class="input-field mb-4" placeholder="🔍 Search IMEI or model..." oninput="filterDevices()">
@@ -123,7 +131,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </section>
 
 <!-- PAYMENTS -->
-<section id="paymentsSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
+<section id="paymentsSection" class="app-section hidden relative z-10 p-4">
   <div class="max-w-4xl mx-auto">
     <div class="mb-4"><h2 class="text-2xl font-bold">Payments</h2><p class="text-xs text-gray-400" id="paymentCount">Loading...</p><p class="text-lg font-extrabold mt-2" style="color: #22c55e;" id="paymentTotal">Rs 0</p></div>
     <div id="paymentsList"><p class="text-center text-gray-500 py-8 text-sm">Loading...</p></div>
@@ -131,7 +139,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </section>
 
 <!-- REPORTS -->
-<section id="reportsSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
+<section id="reportsSection" class="app-section hidden relative z-10 p-4">
   <div class="max-w-4xl mx-auto">
     <div class="flex items-center justify-between mb-4"><div><h2 class="text-2xl font-bold">Reports</h2><p class="text-xs text-gray-400">Analytics</p></div><button onclick="exportCSV()" class="btn-secondary">📥 Export</button></div>
     <div class="glass p-4 mb-4"><h3 class="text-sm font-bold mb-3">📊 Revenue Trend</h3><div style="height: 200px;"><canvas id="reportRevenueChart"></canvas></div></div>
@@ -266,44 +274,17 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// SECURE PLUG ADMIN — v3.0 (Direct UID Match)
+// SECURE PLUG ADMIN — v4.0 RAW REST API
+// Uses plain fetch() instead of Supabase client
 // ═══════════════════════════════════════════════════════════════
 
-// ✅ HARDCODED CONFIG — No ambiguity
 const SUPABASE_URL = 'https://rmqqhbcvvuojvlefuzjd.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_9yaDkS_CNmZyFsbjFl3U_Q_0J24yWgm';
 const ADMIN_EMAIL = 'ladla123457ali@gmail.com';
 const ADMIN_UID = '71b3f60d-19a3-4089-a222-d0d6c201f2df';
 
-// Debug bar update
-function setDebug(msg, color) {
-  const bar = document.getElementById('debugBar');
-  if (bar) {
-    bar.textContent = msg;
-    bar.style.color = color || '#4ade80';
-  }
-}
-
-// Check if Supabase loaded
-if (typeof supabase === 'undefined') {
-  setDebug('❌ Supabase library NOT loaded', '#ef4444');
-  alert('Supabase library failed to load. Please refresh.');
-} else {
-  setDebug('✅ Supabase library loaded');
-}
-
-// Create client
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { 
-    persistSession: true, 
-    autoRefreshToken: true, 
-    detectSessionInUrl: false,
-    storage: window.localStorage,
-    storageKey: 'secureplug-admin-v3'
-  }
-});
-
-setDebug('✅ Client initialized');
+let accessToken = null;
+let currentUser = null;
 
 let allRetailers = [];
 let allDevices = [];
@@ -313,19 +294,243 @@ let dashChartInstance = null;
 let reportRevenueInstance = null;
 let reportStatusInstance = null;
 
+// ═══════════════════════════════════════════════════════════════
+// DEBUG LOGGER
+// ═══════════════════════════════════════════════════════════════
+const debugLogs = [];
+function log(msg, type) {
+  const time = new Date().toLocaleTimeString();
+  const line = `[${time}] ${msg}`;
+  debugLogs.push({ msg, type, time });
+  console.log(line);
+  const panel = document.getElementById('debugPanel');
+  if (panel) {
+    const div = document.createElement('div');
+    div.className = 'debug-line ' + (type || '');
+    div.textContent = line;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+}
+function toggleDebug() {
+  const p = document.getElementById('debugPanel');
+  p.classList.toggle('show');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RAW REST API HELPERS
+// ═══════════════════════════════════════════════════════════════
+async function apiAuth(path, body) {
+  const url = `${SUPABASE_URL}/auth/v1/${path}`;
+  log(`📡 AUTH: POST ${path}`, 'info');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  log(`📥 AUTH response: ${res.status}`, res.ok ? '' : 'error');
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function apiGet(table, query) {
+  const url = `${SUPABASE_URL}/rest/v1/${table}${query || ''}`;
+  log(`📡 GET ${table}`, 'info');
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json'
+  };
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+  const res = await fetch(url, { headers });
+  const data = await res.json();
+  log(`📥 GET ${table}: ${res.status} (${Array.isArray(data) ? data.length : 'obj'})`, res.ok ? '' : 'error');
+  if (!res.ok) log(`   ❌ ${JSON.stringify(data)}`, 'error');
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function apiPost(table, body) {
+  const url = `${SUPABASE_URL}/rest/v1/${table}`;
+  log(`📡 POST ${table}`, 'info');
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  const data = await res.json();
+  log(`📥 POST ${table}: ${res.status}`, res.ok ? '' : 'error');
+  if (!res.ok) log(`   ❌ ${JSON.stringify(data)}`, 'error');
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function apiPatch(table, query, body) {
+  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
+  log(`📡 PATCH ${table}`, 'info');
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+  const res = await fetch(url, { method: 'PATCH', headers, body: JSON.stringify(body) });
+  const data = await res.json();
+  log(`📥 PATCH ${table}: ${res.status}`, res.ok ? '' : 'error');
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function apiDelete(table, query) {
+  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
+  log(`📡 DELETE ${table}`, 'info');
+  const headers = { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' };
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+  const res = await fetch(url, { method: 'DELETE', headers });
+  log(`📥 DELETE ${table}: ${res.status}`, res.ok ? '' : 'error');
+  return { ok: res.ok, status: res.status };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOGIN — Using RAW REST API
+// ═══════════════════════════════════════════════════════════════
+async function handleLogin(e) {
+  if (e) e.preventDefault();
+  document.getElementById('debugPanel').classList.add('show');
+  
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  errEl.classList.add('hidden');
+  
+  if (!email || !password) { errEl.textContent = 'Enter email & password'; errEl.classList.remove('hidden'); return; }
+  
+  btn.disabled = true;
+  btn.textContent = 'Signing in...';
+  
+  log('═══════════════════════════════════════════', 'info');
+  log('🚀 LOGIN STARTED', 'info');
+  log(`📧 Email: ${email}`, 'info');
+  
+  try {
+    // STEP 1: AUTH — sign in with password
+    log('STEP 1: Authenticating...', 'info');
+    const authRes = await apiAuth('token?grant_type=password', { email, password });
+    
+    if (!authRes.ok) {
+      log(`❌ Auth failed: ${authRes.data.error_description || authRes.data.msg || JSON.stringify(authRes.data)}`, 'error');
+      errEl.textContent = 'Login failed: ' + (authRes.data.error_description || authRes.data.msg || 'Invalid credentials');
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Sign In to Dashboard';
+      return;
+    }
+    
+    accessToken = authRes.data.access_token;
+    currentUser = authRes.data.user;
+    
+    log(`✅ Auth OK. User ID: ${currentUser.id}`, '');
+    log(`✅ Token length: ${accessToken ? accessToken.length : 0}`, '');
+    
+    if (!accessToken) {
+      log('❌ No access token received', 'error');
+      errEl.textContent = 'No access token received';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Sign In to Dashboard';
+      return;
+    }
+    
+    // Save token to localStorage
+    localStorage.setItem('sp_admin_token', accessToken);
+    localStorage.setItem('sp_admin_user', JSON.stringify(currentUser));
+    
+    // STEP 2: Verify admin_users access
+    log('STEP 2: Querying admin_users...', 'info');
+    await new Promise(r => setTimeout(r, 500));
+    
+    const adminRes = await apiGet('admin_users', `?select=*&email=eq.${encodeURIComponent(email)}`);
+    
+    if (!adminRes.ok) {
+      log(`❌ admin_users query failed: ${adminRes.status}`, 'error');
+      log(`   Response: ${JSON.stringify(adminRes.data)}`, 'error');
+      errEl.textContent = 'Database access denied. Check RLS policies.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Sign In to Dashboard';
+      return;
+    }
+    
+    if (!Array.isArray(adminRes.data) || adminRes.data.length === 0) {
+      log(`⚠️ admin_users returned 0 rows`, 'warn');
+      
+      // Fallback: Try by auth_user_id
+      log('STEP 2b: Retry with auth_user_id...', 'info');
+      const adminRes2 = await apiGet('admin_users', `?select=*&auth_user_id=eq.${currentUser.id}`);
+      log(`   Result: ${Array.isArray(adminRes2.data) ? adminRes2.data.length : 0} rows`, '');
+      
+      if (Array.isArray(adminRes2.data) && adminRes2.data.length > 0) {
+        adminRes.data = adminRes2.data;
+      } else {
+        log('❌ Admin not found in database', 'error');
+        errEl.textContent = 'Admin account not found. Check Supabase data.';
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Sign In to Dashboard';
+        return;
+      }
+    }
+    
+    const adminRecord = adminRes.data[0];
+    log(`✅ Admin found: ${adminRecord.name} (${adminRecord.role})`, '');
+    
+    if (adminRecord.is_active === false) {
+      log('❌ Account disabled', 'error');
+      errEl.textContent = 'Account disabled';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Sign In to Dashboard';
+      return;
+    }
+    
+    log('🎉 LOGIN SUCCESSFUL!', '');
+    showToast('Welcome, ' + (adminRecord.name || 'Admin'), 'success');
+    btn.disabled = false;
+    btn.textContent = 'Sign In to Dashboard';
+    showSection('dashboardSection');
+    
+  } catch (err) {
+    log(`❌ Exception: ${err.message}`, 'error');
+    console.error(err);
+    errEl.textContent = 'Error: ' + err.message;
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Sign In to Dashboard';
+  }
+}
+
+async function handleLogout() {
+  accessToken = null;
+  currentUser = null;
+  localStorage.removeItem('sp_admin_token');
+  localStorage.removeItem('sp_admin_user');
+  document.getElementById('password').value = '';
+  document.getElementById('debugPanel').innerHTML = '';
+  showSection('loginSection');
+  showToast('Logged out', 'info');
+}
+
+// ═══════════════════════════════════════════════════════════════
 // UTILS
+// ═══════════════════════════════════════════════════════════════
 function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show toast-' + (type || 'info');
   setTimeout(() => t.classList.remove('show'), 3500);
 }
-function showError(msg) { 
-  const e = document.getElementById('loginError'); 
-  if (e) { e.textContent = msg; e.classList.remove('hidden'); } 
-  showToast(msg, 'error'); 
-}
-function hideError() { const e = document.getElementById('loginError'); if (e) e.classList.add('hidden'); }
 function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 function generateLicenseKey() { const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let k = 'SP-'; for (let i = 0; i < 12; i++) k += c.charAt(Math.floor(Math.random() * c.length)); return k; }
 function copyToClipboard(text) { if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showToast('Copied!', 'success')); else showToast(text, 'info'); }
@@ -354,167 +559,27 @@ function openModal(id) { document.getElementById(id).classList.remove('hidden');
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
 // ═══════════════════════════════════════════════════════════════
-// ✅ LOGIN — Direct UID match + Email fallback
-// ═══════════════════════════════════════════════════════════════
-async function handleLogin(e) {
-  if (e) e.preventDefault();
-  hideError();
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  const btn = document.getElementById('loginBtn');
-  
-  if (!email || !password) { showError('Enter email and password'); return; }
-  
-  btn.disabled = true; 
-  btn.textContent = 'Signing in...';
-  setDebug('🔐 Signing in...', '#fbbf24');
-  
-  try {
-    // STEP 1: Sign in
-    const r = await sb.auth.signInWithPassword({ email, password });
-    
-    if (r.error) { 
-      console.error('❌ Sign in error:', r.error);
-      setDebug('❌ Sign in failed: ' + r.error.message, '#ef4444');
-      showError(r.error.message); 
-      btn.disabled = false; 
-      btn.textContent = 'Sign In to Dashboard'; 
-      return; 
-    }
-    
-    if (!r.data || !r.data.session) {
-      showError('No session returned');
-      btn.disabled = false;
-      btn.textContent = 'Sign In to Dashboard';
-      return;
-    }
-    
-    console.log('✅ Signed in. User ID:', r.data.user.id);
-    setDebug('✅ Signed in. UID: ' + r.data.user.id.substring(0, 8) + '...', '#4ade80');
-    
-    // STEP 2: Explicitly set session
-    await sb.auth.setSession({
-      access_token: r.data.session.access_token,
-      refresh_token: r.data.session.refresh_token
-    });
-    
-    await sleep(1000);
-    
-    // STEP 3: Verify session
-    const { data: sessionCheck } = await sb.auth.getSession();
-    if (!sessionCheck?.session) {
-      showError('Session not established');
-      btn.disabled = false;
-      btn.textContent = 'Sign In to Dashboard';
-      return;
-    }
-    
-    setDebug('🔍 Session verified. Fetching admin...', '#fbbf24');
-    
-    // STEP 4: Fetch admin — Direct UID match FIRST, then auth_user_id, then email
-    let adminRecord = null;
-    
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      console.log(`🔄 Attempt ${attempt}...`);
-      
-      // Try 1: Direct match by our known UID
-      let check = await sb
-        .from('admin_users')
-        .select('id, email, name, role, is_active')
-        .eq('auth_user_id', ADMIN_UID)
-        .maybeSingle();
-      
-      console.log('   Try 1 (hardcoded UID):', check.data ? 'FOUND' : 'not found');
-      
-      // Try 2: Match by session user ID
-      if (!check.data && r.data.user.id) {
-        check = await sb
-          .from('admin_users')
-          .select('id, email, name, role, is_active')
-          .eq('auth_user_id', r.data.user.id)
-          .maybeSingle();
-        console.log('   Try 2 (session UID):', check.data ? 'FOUND' : 'not found');
-      }
-      
-      // Try 3: Match by email
-      if (!check.data) {
-        check = await sb
-          .from('admin_users')
-          .select('id, email, name, role, is_active')
-          .eq('email', email)
-          .maybeSingle();
-        console.log('   Try 3 (email):', check.data ? 'FOUND' : 'not found');
-      }
-      
-      if (check.data) {
-        adminRecord = check.data;
-        console.log('✅ Admin found:', adminRecord);
-        setDebug('✅ Admin found: ' + adminRecord.name, '#4ade80');
-        break;
-      }
-      
-      await sleep(500);
-    }
-    
-    if (!adminRecord) {
-      console.error('❌ Admin not found');
-      setDebug('❌ Admin not found in database', '#ef4444');
-      showError('Admin account not found.');
-      await sb.auth.signOut();
-      btn.disabled = false;
-      btn.textContent = 'Sign In to Dashboard';
-      return;
-    }
-    
-    if (adminRecord.is_active === false) {
-      showError('Account disabled');
-      await sb.auth.signOut();
-      btn.disabled = false;
-      btn.textContent = 'Sign In to Dashboard';
-      return;
-    }
-    
-    // STEP 5: Success
-    console.log('🎉 Login successful!');
-    setDebug('🎉 Login successful! Loading dashboard...', '#4ade80');
-    showToast('Welcome, ' + (adminRecord.name || 'Admin'), 'success');
-    showSection('dashboardSection');
-    
-  } catch (err) { 
-    console.error('❌ Exception:', err);
-    setDebug('❌ Error: ' + err.message, '#ef4444');
-    showError('Error: ' + err.message); 
-    btn.disabled = false; 
-    btn.textContent = 'Sign In to Dashboard'; 
-  }
-}
-
-async function handleLogout() { 
-  await sb.auth.signOut(); 
-  document.getElementById('password').value = ''; 
-  showSection('loginSection'); 
-  showToast('Logged out', 'info'); 
-  setDebug('👋 Logged out', '#a78bfa');
-}
-
-// ═══════════════════════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════
 async function loadDashboard() {
   try {
-    const r1 = await sb.from('businesses').select('*', { count: 'exact', head: true });
-    setText('statRetailers', r1.count || 0);
-    const r2 = await sb.from('devices').select('*', { count: 'exact', head: true });
-    setText('statDevices', r2.count || 0);
-    const r3 = await sb.from('payments').select('amount, payment_date');
+    const [r1, r2, r3, r4] = await Promise.all([
+      apiGet('businesses', '?select=id'),
+      apiGet('devices', '?select=id'),
+      apiGet('payments', '?select=amount,payment_date'),
+      apiGet('emi_plans', '?select=id&status=eq.defaulted')
+    ]);
+    
+    setText('statRetailers', Array.isArray(r1.data) ? r1.data.length : 0);
+    setText('statDevices', Array.isArray(r2.data) ? r2.data.length : 0);
     let total = 0;
-    if (r3.data) r3.data.forEach(p => total += Number(p.amount) || 0);
+    if (Array.isArray(r3.data)) r3.data.forEach(p => total += Number(p.amount) || 0);
     setText('statRevenue', formatCurrency(total));
-    const r4 = await sb.from('emi_plans').select('*', { count: 'exact', head: true }).eq('status', 'defaulted');
-    setText('statOverdue', r4.count || 0);
+    setText('statOverdue', Array.isArray(r4.data) ? r4.data.length : 0);
+    
     const months = ['Jun','Jul','Aug','Sep','Oct','Nov'];
     const data = [0,0,0,0,0,0];
-    if (r3.data) {
+    if (Array.isArray(r3.data)) {
       const now = new Date();
       r3.data.forEach(p => {
         if (!p.payment_date) return;
@@ -526,11 +591,15 @@ async function loadDashboard() {
     if (dashChartInstance) dashChartInstance.destroy();
     const ctx = document.getElementById('dashChart');
     if (ctx) dashChartInstance = new Chart(ctx, { type: 'line', data: { labels: months, datasets: [{ label: 'Revenue', data, borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.1)', tension: 0.4, fill: true, borderWidth: 2.5, pointBackgroundColor: '#ff6b35' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#6b7280', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#6b7280', font: { size: 10 } }, grid: { display: false } } } } });
-    const rec = await sb.from('payments').select('*').order('payment_date', { ascending: false }).limit(3);
+    
+    const rec = await apiGet('payments', '?select=*&order=payment_date.desc&limit=3');
     const recEl = document.getElementById('recentPayments');
-    if (rec.data && rec.data.length > 0) recEl.innerHTML = rec.data.map(p => '<div class="flex items-center justify-between py-2" style="border-bottom: 1px solid #1f1f2e;"><div><p class="text-xs text-gray-400">' + formatDate(p.payment_date) + '</p><p class="text-xs text-gray-500">' + (p.method || 'Cash') + '</p></div><p class="text-sm font-bold" style="color: #22c55e;">' + formatCurrency(p.amount) + '</p></div>').join('');
-    else recEl.innerHTML = '<p class="text-xs text-gray-500">No payments yet</p>';
-  } catch (err) { console.error(err); }
+    if (Array.isArray(rec.data) && rec.data.length > 0) {
+      recEl.innerHTML = rec.data.map(p => '<div class="flex items-center justify-between py-2" style="border-bottom: 1px solid #1f1f2e;"><div><p class="text-xs text-gray-400">' + formatDate(p.payment_date) + '</p><p class="text-xs text-gray-500">' + (p.method || 'Cash') + '</p></div><p class="text-sm font-bold" style="color: #22c55e;">' + formatCurrency(p.amount) + '</p></div>').join('');
+    } else {
+      recEl.innerHTML = '<p class="text-xs text-gray-500">No payments yet</p>';
+    }
+  } catch (err) { log('Dashboard error: ' + err.message, 'error'); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -540,13 +609,21 @@ async function loadRetailers() {
   const list = document.getElementById('retailersList');
   list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
   try {
-    const r = await sb.from('businesses').select('*').order('created_at', { ascending: false });
-    if (r.error) throw r.error;
-    allRetailers = r.data || [];
+    const r = await apiGet('businesses', '?select=*&order=created_at.desc');
+    if (!r.ok || !Array.isArray(r.data)) {
+      list.innerHTML = '<p class="text-center text-red-400 py-8 text-sm">Error: ' + JSON.stringify(r.data) + '</p>';
+      return;
+    }
+    allRetailers = r.data;
     setText('retailerCount', allRetailers.length + ' retailer' + (allRetailers.length !== 1 ? 's' : ''));
-    if (allRetailers.length === 0) { list.innerHTML = '<div class="glass p-8 text-center"><p class="text-gray-400 mb-4">No retailers yet</p><button onclick="openAddRetailerModal()" class="btn-primary py-2.5 px-6">+ Add First Retailer</button></div>'; return; }
+    if (allRetailers.length === 0) {
+      list.innerHTML = '<div class="glass p-8 text-center"><p class="text-gray-400 mb-4">No retailers yet</p><button onclick="openAddRetailerModal()" class="btn-primary py-2.5 px-6">+ Add First Retailer</button></div>';
+      return;
+    }
     renderRetailers(allRetailers);
-  } catch (err) { list.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>'; }
+  } catch (err) {
+    list.innerHTML = '<p class="text-center text-red-400 py-8 text-sm">Error: ' + err.message + '</p>';
+  }
 }
 
 function filterRetailers() {
@@ -594,49 +671,45 @@ async function handleAddRetailer(e) {
   if (password !== confirmPassword) { showToast('Passwords do not match', 'error'); return; }
   
   try {
-    // Save admin session
-    const currentSession = await sb.auth.getSession();
+    log('Creating retailer...', 'info');
     
-    // Create retailer auth user
-    const { data: authData, error: authError } = await sb.auth.signUp({
+    // Create retailer auth user via REST API
+    const authRes = await apiAuth('signup', {
       email: email,
       password: password,
-      options: { data: { full_name: document.getElementById('retOwner').value.trim(), role: 'retailer' } }
+      data: { full_name: document.getElementById('retOwner').value.trim(), role: 'retailer' }
     });
     
-    if (authError) { showToast('Auth error: ' + authError.message, 'error'); return; }
-    
-    // Restore admin session
-    if (currentSession.data && currentSession.data.session) {
-      await sb.auth.setSession({
-        access_token: currentSession.data.session.access_token,
-        refresh_token: currentSession.data.session.refresh_token
-      });
-      await sleep(500);
+    if (!authRes.ok) {
+      showToast('Auth error: ' + JSON.stringify(authRes.data), 'error');
+      return;
     }
     
-    // Insert into businesses
-    const { data: business, error: bizError } = await sb
-      .from('businesses')
-      .insert({
-        name: document.getElementById('retName').value.trim(),
-        owner_name: document.getElementById('retOwner').value.trim(),
-        email: email,
-        phone: document.getElementById('retPhone').value.trim(),
-        whatsapp: (document.getElementById('retWhatsapp') ? document.getElementById('retWhatsapp').value.trim() : '') || document.getElementById('retPhone').value.trim(),
-        city: document.getElementById('retCity').value.trim(),
-        address: document.getElementById('retAddress').value.trim(),
-        license_key: generateLicenseKey(),
-        device_limit: parseInt(document.getElementById('retLimit').value) || 50,
-        is_active: true,
-        lock_message: document.getElementById('retLockMsg') ? document.getElementById('retLockMsg').value.trim() : 'Payment karein',
-        color: document.getElementById('retColor') ? document.getElementById('retColor').value : 'orange',
-        auth_user_id: (authData && authData.user) ? authData.user.id : null
-      })
-      .select()
-      .single();
+    const newUserId = authRes.data.user ? authRes.data.user.id : null;
     
-    if (bizError) { showToast('Business error: ' + bizError.message, 'error'); return; }
+    // Insert into businesses
+    const bizRes = await apiPost('businesses', {
+      name: document.getElementById('retName').value.trim(),
+      owner_name: document.getElementById('retOwner').value.trim(),
+      email: email,
+      phone: document.getElementById('retPhone').value.trim(),
+      whatsapp: (document.getElementById('retWhatsapp') ? document.getElementById('retWhatsapp').value.trim() : '') || document.getElementById('retPhone').value.trim(),
+      city: document.getElementById('retCity').value.trim(),
+      address: document.getElementById('retAddress').value.trim(),
+      license_key: generateLicenseKey(),
+      device_limit: parseInt(document.getElementById('retLimit').value) || 50,
+      is_active: true,
+      lock_message: document.getElementById('retLockMsg') ? document.getElementById('retLockMsg').value.trim() : 'Payment karein',
+      color: document.getElementById('retColor') ? document.getElementById('retColor').value : 'orange',
+      auth_user_id: newUserId
+    });
+    
+    if (!bizRes.ok) {
+      showToast('Business error: ' + JSON.stringify(bizRes.data), 'error');
+      return;
+    }
+    
+    const business = Array.isArray(bizRes.data) ? bizRes.data[0] : bizRes.data;
     
     showCredentialsModal({
       name: business.name,
@@ -684,8 +757,7 @@ async function handleResetRetailerPassword(retailerId) {
   if (!r || !r.email) { showToast('Email not found', 'error'); return; }
   if (!confirm('Send password reset link to ' + r.email + '?')) return;
   try {
-    const { error } = await sb.auth.resetPasswordForEmail(r.email);
-    if (error) throw error;
+    await apiAuth('recover', { email: r.email });
     showToast('Reset link sent', 'success');
   } catch (err) { showToast('Reset error: ' + err.message, 'error'); }
 }
@@ -706,13 +778,15 @@ async function viewRetailer(id) {
   showSection('retailerDetailSection');
   const content = document.getElementById('retailerDetailContent');
   content.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
+  
   try {
     const [custR, devR] = await Promise.all([
-      sb.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', id),
-      sb.from('devices').select('*', { count: 'exact', head: true }).eq('business_id', id)
+      apiGet('customers', `?select=id&business_id=eq.${id}`),
+      apiGet('devices', `?select=id&business_id=eq.${id}`)
     ]);
-    const custCount = custR.count || 0;
-    const devCount = devR.count || 0;
+    
+    const custCount = Array.isArray(custR.data) ? custR.data.length : 0;
+    const devCount = Array.isArray(devR.data) ? devR.data.length : 0;
     const limit = currentRetailer.device_limit || 50;
     const remaining = limit - devCount;
     const init = (currentRetailer.name || 'R').substring(0, 2).toUpperCase();
@@ -754,7 +828,7 @@ async function viewRetailer(id) {
       
       '<button onclick="deleteRetailer(\'' + id + '\')" class="btn-danger w-full py-3">Delete Retailer</button>';
   } catch (err) {
-    content.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>';
+    content.innerHTML = '<p class="text-center text-red-400 py-8 text-sm">Error: ' + err.message + '</p>';
   }
 }
 
@@ -773,8 +847,8 @@ async function handleIncreaseLimit(e) {
   try {
     const current = currentRetailer.device_limit || 50;
     const newLimit = current + add;
-    const r = await sb.from('businesses').update({ device_limit: newLimit }).eq('id', id);
-    if (r.error) throw r.error;
+    const r = await apiPatch('businesses', `?id=eq.${id}`, { device_limit: newLimit });
+    if (!r.ok) throw new Error('Update failed');
     currentRetailer.device_limit = newLimit;
     showToast('Limit increased!', 'success');
     closeModal('increaseLimitModal');
@@ -785,8 +859,8 @@ async function handleIncreaseLimit(e) {
 
 async function toggleRetailer(id, active) {
   try {
-    const r = await sb.from('businesses').update({ is_active: !active }).eq('id', id);
-    if (r.error) throw r.error;
+    const r = await apiPatch('businesses', `?id=eq.${id}`, { is_active: !active });
+    if (!r.ok) throw new Error('Update failed');
     showToast(active ? 'Suspended' : 'Activated', 'success');
     loadRetailers();
     if (currentRetailer && currentRetailer.id === id) {
@@ -799,8 +873,8 @@ async function toggleRetailer(id, active) {
 async function deleteRetailer(id) {
   if (!confirm('Delete this retailer?')) return;
   try {
-    const r = await sb.from('businesses').delete().eq('id', id);
-    if (r.error) throw r.error;
+    const r = await apiDelete('businesses', `?id=eq.${id}`);
+    if (!r.ok) throw new Error('Delete failed');
     showToast('Deleted', 'success');
     showSection('retailersSection');
     loadRetailers();
@@ -814,13 +888,21 @@ async function loadDevices() {
   const list = document.getElementById('devicesList');
   list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
   try {
-    const r = await sb.from('devices').select('*').order('created_at', { ascending: false });
-    if (r.error) throw r.error;
-    allDevices = r.data || [];
+    const r = await apiGet('devices', '?select=*&order=created_at.desc');
+    if (!r.ok || !Array.isArray(r.data)) {
+      list.innerHTML = '<p class="text-center text-red-400 py-8 text-sm">Error loading devices</p>';
+      return;
+    }
+    allDevices = r.data;
     setText('deviceCount', allDevices.length + ' device' + (allDevices.length !== 1 ? 's' : ''));
-    if (allDevices.length === 0) { list.innerHTML = '<div class="glass p-8 text-center"><p class="text-gray-400">No devices yet</p></div>'; return; }
+    if (allDevices.length === 0) {
+      list.innerHTML = '<div class="glass p-8 text-center"><p class="text-gray-400">No devices yet</p></div>';
+      return;
+    }
     renderDevices(allDevices);
-  } catch (err) { list.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>'; }
+  } catch (err) {
+    list.innerHTML = '<p class="text-center text-red-400 py-8 text-sm">Error: ' + err.message + '</p>';
+  }
 }
 
 function filterDevices() {
@@ -848,14 +930,14 @@ async function sendCommand(deviceUuid, type) {
   if (!confirm(type + ' this device?')) return;
   try {
     const dev = allDevices.find(d => d.device_id === deviceUuid || d.id === deviceUuid);
-    await sb.from('device_commands').insert({ 
+    await apiPost('device_commands', { 
       device_id: deviceUuid, 
       business_id: dev ? dev.business_id : null, 
       command_type: type, 
       status: 'pending', 
       issued_at: new Date().toISOString() 
     });
-    await sb.from('devices').update({ status: type === 'LOCK' ? 'locked' : 'active' }).eq('id', dev ? dev.id : deviceUuid);
+    await apiPatch('devices', `?id=eq.${dev ? dev.id : deviceUuid}`, { status: type === 'LOCK' ? 'locked' : 'active' });
     showToast(type + ' command sent!', 'success');
     loadDevices();
   } catch (err) { showToast('Error: ' + err.message, 'error'); }
@@ -868,26 +950,34 @@ async function loadPayments() {
   const list = document.getElementById('paymentsList');
   list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
   try {
-    const r = await sb.from('payments').select('*').order('payment_date', { ascending: false }).limit(100);
-    if (r.error) throw r.error;
-    allPayments = r.data || [];
+    const r = await apiGet('payments', '?select=*&order=payment_date.desc&limit=100');
+    if (!r.ok || !Array.isArray(r.data)) {
+      list.innerHTML = '<p class="text-center text-red-400 py-8 text-sm">Error loading payments</p>';
+      return;
+    }
+    allPayments = r.data;
     let total = 0;
     allPayments.forEach(p => total += Number(p.amount) || 0);
     setText('paymentCount', allPayments.length + ' payment' + (allPayments.length !== 1 ? 's' : ''));
     setText('paymentTotal', formatCurrency(total));
-    if (allPayments.length === 0) { list.innerHTML = '<div class="glass p-8 text-center"><p class="text-gray-400">No payments yet</p></div>'; return; }
+    if (allPayments.length === 0) {
+      list.innerHTML = '<div class="glass p-8 text-center"><p class="text-gray-400">No payments yet</p></div>';
+      return;
+    }
     list.innerHTML = allPayments.map(p => '<div class="card-item" style="cursor: default;"><div class="flex items-center justify-between gap-3"><div class="min-w-0 flex-1"><p class="text-[11px] text-gray-500 font-mono mb-1">' + (p.transaction_id || 'TRX-' + (p.id||'').substring(0,8)) + '</p><p class="text-lg font-bold" style="color: #22c55e;">' + formatCurrency(p.amount) + '</p><div class="flex items-center gap-2 mt-1"><span class="badge badge-warning">' + (p.method || 'Cash') + '</span><span class="text-[11px] text-gray-400">' + formatDate(p.payment_date) + '</span></div></div><span class="badge badge-success">✓</span></div></div>').join('');
-  } catch (err) { list.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>'; }
+  } catch (err) {
+    list.innerHTML = '<p class="text-center text-red-400 py-8 text-sm">Error: ' + err.message + '</p>';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
 // REPORTS
 // ═══════════════════════════════════════════════════════════════
 async function loadReports() {
-  const r = await sb.from('payments').select('amount, payment_date');
+  const r = await apiGet('payments', '?select=amount,payment_date');
   const months = ['Jun','Jul','Aug','Sep','Oct','Nov'];
   const data = [0,0,0,0,0,0];
-  if (r.data) {
+  if (Array.isArray(r.data)) {
     const now = new Date();
     r.data.forEach(p => {
       if (!p.payment_date) return;
@@ -899,16 +989,21 @@ async function loadReports() {
   if (reportRevenueInstance) reportRevenueInstance.destroy();
   const ctx1 = document.getElementById('reportRevenueChart');
   if (ctx1) reportRevenueInstance = new Chart(ctx1, { type: 'bar', data: { labels: months, datasets: [{ label: 'Revenue', data, backgroundColor: '#ff6b35', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#6b7280', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#6b7280', font: { size: 10 } }, grid: { display: false } } } } });
-  const devR = await sb.from('devices').select('status');
+  
+  const devR = await apiGet('devices', '?select=status');
   let locked = 0, active = 0;
-  if (devR.data) devR.data.forEach(d => { if (d.status === 'locked') locked++; else active++; });
+  if (Array.isArray(devR.data)) devR.data.forEach(d => { if (d.status === 'locked') locked++; else active++; });
   if (reportStatusInstance) reportStatusInstance.destroy();
   const ctx2 = document.getElementById('reportStatusChart');
   if (ctx2) reportStatusInstance = new Chart(ctx2, { type: 'doughnut', data: { labels: ['Active', 'Locked'], datasets: [{ data: [active, locked], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#a0a0b0', font: { size: 11 }, padding: 12, usePointStyle: true } } } } });
-  const bizR = await sb.from('businesses').select('name, city');
+  
+  const bizR = await apiGet('businesses', '?select=name,city');
   const topEl = document.getElementById('topRetailers');
-  if (bizR.data && bizR.data.length > 0) topEl.innerHTML = bizR.data.slice(0, 5).map((b, i) => '<div class="flex items-center gap-3 py-2" style="border-bottom: 1px solid #1f1f2e;"><div class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs" style="background: linear-gradient(135deg, #ff6b35, #8b5cf6);">' + (i+1) + '</div><div class="flex-1"><p class="text-sm font-semibold">' + b.name + '</p><p class="text-xs text-gray-500">' + (b.city || 'N/A') + '</p></div></div>').join('');
-  else topEl.innerHTML = '<p class="text-xs text-gray-500">No retailers yet</p>';
+  if (Array.isArray(bizR.data) && bizR.data.length > 0) {
+    topEl.innerHTML = bizR.data.slice(0, 5).map((b, i) => '<div class="flex items-center gap-3 py-2" style="border-bottom: 1px solid #1f1f2e;"><div class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs" style="background: linear-gradient(135deg, #ff6b35, #8b5cf6);">' + (i+1) + '</div><div class="flex-1"><p class="text-sm font-semibold">' + b.name + '</p><p class="text-xs text-gray-500">' + (b.city || 'N/A') + '</p></div></div>').join('');
+  } else {
+    topEl.innerHTML = '<p class="text-xs text-gray-500">No retailers yet</p>';
+  }
 }
 
 function exportCSV() {
@@ -922,52 +1017,30 @@ function exportCSV() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// AUTO SESSION CHECK ON LOAD
+// STARTUP
 // ═══════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🔍 Checking existing session...');
-  setDebug('🔍 Checking session...', '#fbbf24');
-  
+log('🚀 Secure Plug Admin v4.0 starting...', '');
+log(`📡 URL: ${SUPABASE_URL}`, 'info');
+log(`🔑 API Key: ${SUPABASE_ANON_KEY.substring(0, 20)}...`, 'info');
+
+// Check for saved token
+const savedToken = localStorage.getItem('sp_admin_token');
+const savedUser = localStorage.getItem('sp_admin_user');
+if (savedToken && savedUser) {
   try {
-    const s = await sb.auth.getSession();
-    
-    if (s.data && s.data.session) {
-      console.log('✅ Session exists:', s.data.session.user.id);
-      setDebug('✅ Session exists. Verifying admin...', '#fbbf24');
-      await sleep(500);
-      
-      // Try admin fetch with all methods
-      let adminCheck = await sb
-        .from('admin_users')
-        .select('id, role, is_active')
-        .eq('auth_user_id', ADMIN_UID)
-        .maybeSingle();
-      
-      if (!adminCheck.data) {
-        adminCheck = await sb
-          .from('admin_users')
-          .select('id, role, is_active')
-          .eq('email', ADMIN_EMAIL)
-          .maybeSingle();
-      }
-      
-      if (adminCheck.data && adminCheck.data.is_active !== false) {
-        console.log('✅ Admin session valid. Showing dashboard.');
-        setDebug('✅ Session valid. Loading dashboard...', '#4ade80');
-        showSection('dashboardSection'); 
-        return;
-      }
-    }
-    
-    console.log('⚠️ No valid session');
-    setDebug('⚠️ No session. Please login.', '#fbbf24');
+    accessToken = savedToken;
+    currentUser = JSON.parse(savedUser);
+    log('✅ Restored session for: ' + currentUser.email, '');
+    // Auto-show dashboard
+    setTimeout(() => showSection('dashboardSection'), 500);
+  } catch (e) {
+    log('⚠️ Failed to restore session', 'warn');
     showSection('loginSection');
-  } catch (err) { 
-    console.error('❌ Session check error:', err);
-    setDebug('❌ Error: ' + err.message, '#ef4444');
-    showSection('loginSection'); 
   }
-});
+} else {
+  log('👤 No saved session. Please login.', 'info');
+  showSection('loginSection');
+}
 </script>
 </body>
 </html>
