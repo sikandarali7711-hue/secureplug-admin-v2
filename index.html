@@ -45,17 +45,16 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .modal-content { background: #13131a; border: 1px solid #1f1f2e; border-radius: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 24px; }
 .license-key { font-family: monospace; background: rgba(255,107,53,0.1); color: #ff6b35; padding: 4px 8px; border-radius: 6px; font-size: 11px; display: inline-block; }
-.lockscreen-preview { background: linear-gradient(135deg, #13131a, #1a1a24); border: 2px solid #ff6b35; border-radius: 24px; padding: 24px; text-align: center; }
-.checkbox-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
-.checkbox-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: #ff6b35; }
+.debug-bar { position: fixed; top: 0; left: 0; right: 0; background: #1a1a24; border-bottom: 2px solid #ff6b35; padding: 6px 12px; font-family: monospace; font-size: 10px; color: #4ade80; z-index: 9999; text-align: center; }
 </style>
 </head>
 
 <body>
 <div id="toast" class="toast"></div>
+<div id="debugBar" class="debug-bar">Initializing...</div>
 
 <!-- LOGIN -->
-<section id="loginSection" class="relative z-10 min-h-screen flex items-center justify-center p-4">
+<section id="loginSection" class="relative z-10 min-h-screen flex items-center justify-center p-4" style="padding-top: 40px;">
   <div class="w-full max-w-md">
     <div class="glass-glow p-8">
       <div class="flex justify-center mb-6">
@@ -71,13 +70,13 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
         <div><label class="block text-xs font-semibold text-gray-400 mb-2">MASTER PASSWORD</label><input type="password" id="password" class="input-field" placeholder="Enter master password" required></div>
         <button type="button" id="loginBtn" onclick="handleLogin(event)" class="btn-primary w-full">Sign In to Dashboard</button>
       </div>
-      <p class="text-center text-[10px] text-gray-500 mt-4">v2.2 — Dual fallback auth</p>
+      <p class="text-center text-[10px] text-gray-500 mt-4">v3.0 — Direct UID match</p>
     </div>
   </div>
 </section>
 
 <!-- DASHBOARD -->
-<section id="dashboardSection" class="app-section hidden relative z-10 p-4">
+<section id="dashboardSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
   <div class="max-w-4xl mx-auto">
     <div class="flex items-center justify-between mb-5">
       <div><h2 class="text-2xl font-bold">Dashboard</h2><p class="text-xs text-gray-400">Assalam-o-Alaikum, Admin</p></div>
@@ -95,7 +94,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </section>
 
 <!-- RETAILERS -->
-<section id="retailersSection" class="app-section hidden relative z-10 p-4">
+<section id="retailersSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
   <div class="max-w-4xl mx-auto">
     <div class="flex items-center justify-between mb-4">
       <div><h2 class="text-2xl font-bold">Retailers</h2><p class="text-xs text-gray-400" id="retailerCount">Loading...</p></div>
@@ -107,7 +106,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </section>
 
 <!-- RETAILER DETAIL -->
-<section id="retailerDetailSection" class="app-section hidden relative z-10 p-4">
+<section id="retailerDetailSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
   <div class="max-w-4xl mx-auto">
     <button onclick="showSection('retailersSection')" class="btn-secondary mb-4">← Back</button>
     <div id="retailerDetailContent"><p class="text-center text-gray-500 py-8 text-sm">Loading...</p></div>
@@ -115,7 +114,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </section>
 
 <!-- DEVICES -->
-<section id="devicesSection" class="app-section hidden relative z-10 p-4">
+<section id="devicesSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
   <div class="max-w-4xl mx-auto">
     <div class="mb-4"><h2 class="text-2xl font-bold">Devices</h2><p class="text-xs text-gray-400" id="deviceCount">Loading...</p></div>
     <input type="text" id="searchDevice" class="input-field mb-4" placeholder="🔍 Search IMEI or model..." oninput="filterDevices()">
@@ -124,7 +123,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </section>
 
 <!-- PAYMENTS -->
-<section id="paymentsSection" class="app-section hidden relative z-10 p-4">
+<section id="paymentsSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
   <div class="max-w-4xl mx-auto">
     <div class="mb-4"><h2 class="text-2xl font-bold">Payments</h2><p class="text-xs text-gray-400" id="paymentCount">Loading...</p><p class="text-lg font-extrabold mt-2" style="color: #22c55e;" id="paymentTotal">Rs 0</p></div>
     <div id="paymentsList"><p class="text-center text-gray-500 py-8 text-sm">Loading...</p></div>
@@ -132,7 +131,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </section>
 
 <!-- REPORTS -->
-<section id="reportsSection" class="app-section hidden relative z-10 p-4">
+<section id="reportsSection" class="app-section hidden relative z-10 p-4" style="padding-top: 40px;">
   <div class="max-w-4xl mx-auto">
     <div class="flex items-center justify-between mb-4"><div><h2 class="text-2xl font-bold">Reports</h2><p class="text-xs text-gray-400">Analytics</p></div><button onclick="exportCSV()" class="btn-secondary">📥 Export</button></div>
     <div class="glass p-4 mb-4"><h3 class="text-sm font-bold mb-3">📊 Revenue Trend</h3><div style="height: 200px;"><canvas id="reportRevenueChart"></canvas></div></div>
@@ -266,20 +265,45 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </div>
 
 <script>
-console.log('🚀 Secure Plug Admin v2.2 starting...');
+// ═══════════════════════════════════════════════════════════════
+// SECURE PLUG ADMIN — v3.0 (Direct UID Match)
+// ═══════════════════════════════════════════════════════════════
 
+// ✅ HARDCODED CONFIG — No ambiguity
 const SUPABASE_URL = 'https://rmqqhbcvvuojvlefuzjd.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_9yaDkS_CNmZyFsbjFl3U_Q_0J24yWgm';
+const ADMIN_EMAIL = 'ladla123457ali@gmail.com';
+const ADMIN_UID = '71b3f60d-19a3-4089-a222-d0d6c201f2df';
 
+// Debug bar update
+function setDebug(msg, color) {
+  const bar = document.getElementById('debugBar');
+  if (bar) {
+    bar.textContent = msg;
+    bar.style.color = color || '#4ade80';
+  }
+}
+
+// Check if Supabase loaded
+if (typeof supabase === 'undefined') {
+  setDebug('❌ Supabase library NOT loaded', '#ef4444');
+  alert('Supabase library failed to load. Please refresh.');
+} else {
+  setDebug('✅ Supabase library loaded');
+}
+
+// Create client
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { 
     persistSession: true, 
     autoRefreshToken: true, 
-    detectSessionInUrl: true, 
+    detectSessionInUrl: false,
     storage: window.localStorage,
-    storageKey: 'secureplug-admin-auth-v2'
+    storageKey: 'secureplug-admin-v3'
   }
 });
+
+setDebug('✅ Client initialized');
 
 let allRetailers = [];
 let allDevices = [];
@@ -329,7 +353,9 @@ function showSection(id) {
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-// ✅ LOGIN — Dual fallback (auth_user_id + email)
+// ═══════════════════════════════════════════════════════════════
+// ✅ LOGIN — Direct UID match + Email fallback
+// ═══════════════════════════════════════════════════════════════
 async function handleLogin(e) {
   if (e) e.preventDefault();
   hideError();
@@ -341,13 +367,15 @@ async function handleLogin(e) {
   
   btn.disabled = true; 
   btn.textContent = 'Signing in...';
+  setDebug('🔐 Signing in...', '#fbbf24');
   
   try {
-    console.log('🔐 Signing in with:', email);
+    // STEP 1: Sign in
     const r = await sb.auth.signInWithPassword({ email, password });
     
     if (r.error) { 
       console.error('❌ Sign in error:', r.error);
+      setDebug('❌ Sign in failed: ' + r.error.message, '#ef4444');
       showError(r.error.message); 
       btn.disabled = false; 
       btn.textContent = 'Sign In to Dashboard'; 
@@ -362,19 +390,18 @@ async function handleLogin(e) {
     }
     
     console.log('✅ Signed in. User ID:', r.data.user.id);
-    console.log('✅ Signed in. Email:', r.data.user.email);
+    setDebug('✅ Signed in. UID: ' + r.data.user.id.substring(0, 8) + '...', '#4ade80');
     
-    // Explicitly set session
+    // STEP 2: Explicitly set session
     await sb.auth.setSession({
       access_token: r.data.session.access_token,
       refresh_token: r.data.session.refresh_token
     });
     
-    await sleep(800);
+    await sleep(1000);
     
+    // STEP 3: Verify session
     const { data: sessionCheck } = await sb.auth.getSession();
-    console.log('🔍 Session verified:', sessionCheck?.session?.user?.id);
-    
     if (!sessionCheck?.session) {
       showError('Session not established');
       btn.disabled = false;
@@ -382,35 +409,47 @@ async function handleLogin(e) {
       return;
     }
     
-    // ✅ Admin fetch — DUAL FALLBACK: auth_user_id + email
+    setDebug('🔍 Session verified. Fetching admin...', '#fbbf24');
+    
+    // STEP 4: Fetch admin — Direct UID match FIRST, then auth_user_id, then email
     let adminRecord = null;
     
     for (let attempt = 1; attempt <= 3; attempt++) {
-      console.log(`🔄 Admin fetch attempt ${attempt}...`);
+      console.log(`🔄 Attempt ${attempt}...`);
       
-      // Try 1: auth_user_id
-      let adminCheck = await sb
+      // Try 1: Direct match by our known UID
+      let check = await sb
         .from('admin_users')
         .select('id, email, name, role, is_active')
-        .eq('auth_user_id', r.data.user.id)
+        .eq('auth_user_id', ADMIN_UID)
         .maybeSingle();
       
-      console.log(`   Attempt ${attempt} - auth_user_id result:`, adminCheck.data, adminCheck.error);
+      console.log('   Try 1 (hardcoded UID):', check.data ? 'FOUND' : 'not found');
       
-      // Try 2: email fallback
-      if (!adminCheck.data) {
-        console.log(`   ⚠️ auth_user_id se nahi mila, email se try...`);
-        adminCheck = await sb
+      // Try 2: Match by session user ID
+      if (!check.data && r.data.user.id) {
+        check = await sb
+          .from('admin_users')
+          .select('id, email, name, role, is_active')
+          .eq('auth_user_id', r.data.user.id)
+          .maybeSingle();
+        console.log('   Try 2 (session UID):', check.data ? 'FOUND' : 'not found');
+      }
+      
+      // Try 3: Match by email
+      if (!check.data) {
+        check = await sb
           .from('admin_users')
           .select('id, email, name, role, is_active')
           .eq('email', email)
           .maybeSingle();
-        console.log(`   Attempt ${attempt} - email result:`, adminCheck.data, adminCheck.error);
+        console.log('   Try 3 (email):', check.data ? 'FOUND' : 'not found');
       }
       
-      if (adminCheck.data) {
-        adminRecord = adminCheck.data;
+      if (check.data) {
+        adminRecord = check.data;
         console.log('✅ Admin found:', adminRecord);
+        setDebug('✅ Admin found: ' + adminRecord.name, '#4ade80');
         break;
       }
       
@@ -418,8 +457,9 @@ async function handleLogin(e) {
     }
     
     if (!adminRecord) {
-      console.error('❌ Admin not found after 3 attempts');
-      showError('Admin account not found. Contact support.');
+      console.error('❌ Admin not found');
+      setDebug('❌ Admin not found in database', '#ef4444');
+      showError('Admin account not found.');
       await sb.auth.signOut();
       btn.disabled = false;
       btn.textContent = 'Sign In to Dashboard';
@@ -434,12 +474,15 @@ async function handleLogin(e) {
       return;
     }
     
+    // STEP 5: Success
     console.log('🎉 Login successful!');
+    setDebug('🎉 Login successful! Loading dashboard...', '#4ade80');
     showToast('Welcome, ' + (adminRecord.name || 'Admin'), 'success');
     showSection('dashboardSection');
     
   } catch (err) { 
     console.error('❌ Exception:', err);
+    setDebug('❌ Error: ' + err.message, '#ef4444');
     showError('Error: ' + err.message); 
     btn.disabled = false; 
     btn.textContent = 'Sign In to Dashboard'; 
@@ -451,9 +494,12 @@ async function handleLogout() {
   document.getElementById('password').value = ''; 
   showSection('loginSection'); 
   showToast('Logged out', 'info'); 
+  setDebug('👋 Logged out', '#a78bfa');
 }
 
+// ═══════════════════════════════════════════════════════════════
 // DASHBOARD
+// ═══════════════════════════════════════════════════════════════
 async function loadDashboard() {
   try {
     const r1 = await sb.from('businesses').select('*', { count: 'exact', head: true });
@@ -487,7 +533,9 @@ async function loadDashboard() {
   } catch (err) { console.error(err); }
 }
 
+// ═══════════════════════════════════════════════════════════════
 // RETAILERS
+// ═══════════════════════════════════════════════════════════════
 async function loadRetailers() {
   const list = document.getElementById('retailersList');
   list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
@@ -546,8 +594,10 @@ async function handleAddRetailer(e) {
   if (password !== confirmPassword) { showToast('Passwords do not match', 'error'); return; }
   
   try {
+    // Save admin session
     const currentSession = await sb.auth.getSession();
     
+    // Create retailer auth user
     const { data: authData, error: authError } = await sb.auth.signUp({
       email: email,
       password: password,
@@ -556,6 +606,7 @@ async function handleAddRetailer(e) {
     
     if (authError) { showToast('Auth error: ' + authError.message, 'error'); return; }
     
+    // Restore admin session
     if (currentSession.data && currentSession.data.session) {
       await sb.auth.setSession({
         access_token: currentSession.data.session.access_token,
@@ -564,6 +615,7 @@ async function handleAddRetailer(e) {
       await sleep(500);
     }
     
+    // Insert into businesses
     const { data: business, error: bizError } = await sb
       .from('businesses')
       .insert({
@@ -645,7 +697,9 @@ function handleResendRetailerCredentials(retailerId) {
   showCredentialsModal({ name: r.name || 'Retailer', email: r.email || '', password: pwd, phone: r.phone || r.whatsapp || '', license_key: r.license_key || '' });
 }
 
+// ═══════════════════════════════════════════════════════════════
 // RETAILER DETAIL
+// ═══════════════════════════════════════════════════════════════
 async function viewRetailer(id) {
   currentRetailer = allRetailers.find(r => r.id === id);
   if (!currentRetailer) return;
@@ -753,7 +807,9 @@ async function deleteRetailer(id) {
   } catch (err) { showToast('Error: ' + err.message, 'error'); }
 }
 
+// ═══════════════════════════════════════════════════════════════
 // DEVICES
+// ═══════════════════════════════════════════════════════════════
 async function loadDevices() {
   const list = document.getElementById('devicesList');
   list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
@@ -805,7 +861,9 @@ async function sendCommand(deviceUuid, type) {
   } catch (err) { showToast('Error: ' + err.message, 'error'); }
 }
 
+// ═══════════════════════════════════════════════════════════════
 // PAYMENTS
+// ═══════════════════════════════════════════════════════════════
 async function loadPayments() {
   const list = document.getElementById('paymentsList');
   list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">Loading...</p>';
@@ -822,7 +880,9 @@ async function loadPayments() {
   } catch (err) { list.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>'; }
 }
 
+// ═══════════════════════════════════════════════════════════════
 // REPORTS
+// ═══════════════════════════════════════════════════════════════
 async function loadReports() {
   const r = await sb.from('payments').select('amount, payment_date');
   const months = ['Jun','Jul','Aug','Sep','Oct','Nov'];
@@ -861,43 +921,50 @@ function exportCSV() {
   showToast('Exported!', 'success');
 }
 
-// SESSION CHECK on page load
+// ═══════════════════════════════════════════════════════════════
+// AUTO SESSION CHECK ON LOAD
+// ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🔍 Checking session...');
+  console.log('🔍 Checking existing session...');
+  setDebug('🔍 Checking session...', '#fbbf24');
+  
   try {
     const s = await sb.auth.getSession();
+    
     if (s.data && s.data.session) {
       console.log('✅ Session exists:', s.data.session.user.id);
+      setDebug('✅ Session exists. Verifying admin...', '#fbbf24');
       await sleep(500);
       
-      // Try admin fetch with email fallback
-      const userEmail = s.data.session.user.email;
-      const userId = s.data.session.user.id;
-      
+      // Try admin fetch with all methods
       let adminCheck = await sb
         .from('admin_users')
         .select('id, role, is_active')
-        .eq('auth_user_id', userId)
+        .eq('auth_user_id', ADMIN_UID)
         .maybeSingle();
       
-      if (!adminCheck.data && userEmail) {
+      if (!adminCheck.data) {
         adminCheck = await sb
           .from('admin_users')
           .select('id, role, is_active')
-          .eq('email', userEmail)
+          .eq('email', ADMIN_EMAIL)
           .maybeSingle();
       }
       
       if (adminCheck.data && adminCheck.data.is_active !== false) {
-        console.log('✅ Admin session valid');
+        console.log('✅ Admin session valid. Showing dashboard.');
+        setDebug('✅ Session valid. Loading dashboard...', '#4ade80');
         showSection('dashboardSection'); 
         return;
       }
     }
-    console.log('⚠️ No valid session, showing login');
+    
+    console.log('⚠️ No valid session');
+    setDebug('⚠️ No session. Please login.', '#fbbf24');
     showSection('loginSection');
   } catch (err) { 
     console.error('❌ Session check error:', err);
+    setDebug('❌ Error: ' + err.message, '#ef4444');
     showSection('loginSection'); 
   }
 });
