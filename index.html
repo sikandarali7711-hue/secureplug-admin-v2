@@ -51,7 +51,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
 </style>
 </head>
 
-  <body>
+<body>
 <div id="toast" class="toast"></div>
 
 <!-- LOGIN -->
@@ -195,29 +195,12 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
       <input type="text" id="retLockMsg" class="input-field" placeholder="Lock message (optional)" value="Payment karein, phone unlock ho jayega">
       
       <div>
-        <label class="block text-xs text-gray-400 mb-2">Notice Style</label>
-        <select id="retNoticeStyle" class="input-field">
-          <option value="banner">Banner (top bar)</option>
-          <option value="popup">Popup (center dialog)</option>
-          <option value="kiosk">Kiosk (full screen lock)</option>
-        </select>
-      </div>
-      
-      <div>
         <label class="block text-xs text-gray-400 mb-2">Lock Screen Color</label>
         <select id="retColor" class="input-field">
           <option value="orange">Orange (brand)</option>
           <option value="red">Red (urgent)</option>
           <option value="green">Green (calm)</option>
         </select>
-      </div>
-      
-      <div class="mt-3">
-        <label class="block text-xs text-gray-400 mb-2">Show on lock screen:</label>
-        <div class="checkbox-row"><input type="checkbox" id="retShowShopName" checked><label for="retShowShopName" class="text-sm">Show shop name</label></div>
-        <div class="checkbox-row"><input type="checkbox" id="retShowPhone" checked><label for="retShowPhone" class="text-sm">Show phone number</label></div>
-        <div class="checkbox-row"><input type="checkbox" id="retShowDueAmount" checked><label for="retShowDueAmount" class="text-sm">Show due amount</label></div>
-        <div class="checkbox-row"><input type="checkbox" id="retShowDueDate" checked><label for="retShowDueDate" class="text-sm">Show due date</label></div>
       </div>
       
       <div class="flex gap-2 pt-3">
@@ -305,7 +288,7 @@ body { background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; min-h
   </div>
 </div>
 
-    <script>
+<script>
 console.log('🚀 Admin starting...');
 
 const SUPABASE_URL = 'https://rmqqhbcvvuojvlefuzjd.supabase.co';
@@ -359,7 +342,7 @@ function showSection(id) {
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-// LOGIN
+// ✅ FIXED LOGIN — admin_users use kar raha hai
 async function handleLogin(e) {
   if (e) e.preventDefault();
   hideError();
@@ -372,9 +355,34 @@ async function handleLogin(e) {
     const r = await sb.auth.signInWithPassword({ email, password });
     if (r.error) { showError(r.error.message); btn.disabled = false; btn.textContent = 'Sign In to Dashboard'; return; }
     if (r.data && r.data.session) {
-      const p = await sb.from('profiles').select('*').eq('id', r.data.user.id).maybeSingle();
-      if (!p.data || p.data.role !== 'master_admin') { showError('Access Denied'); await sb.auth.signOut(); btn.disabled = false; btn.textContent = 'Sign In to Dashboard'; return; }
-      showToast('Welcome, ' + (p.data.full_name || 'Sikandar'), 'success');
+      // ✅ admin_users table check — profiles ki jagah
+      const adminCheck = await sb
+        .from('admin_users')
+        .select('id, email, name, role, is_active')
+        .eq('auth_user_id', r.data.user.id)
+        .maybeSingle();
+      
+      if (!adminCheck.data) {
+        showError('Access Denied — Admin account not found');
+        await sb.auth.signOut();
+        btn.disabled = false; btn.textContent = 'Sign In to Dashboard';
+        return;
+      }
+      if (adminCheck.data.is_active === false) {
+        showError('Access Denied — Account disabled');
+        await sb.auth.signOut();
+        btn.disabled = false; btn.textContent = 'Sign In to Dashboard';
+        return;
+      }
+      // ✅ super_admin role check (master_admin ki jagah)
+      if (adminCheck.data.role !== 'super_admin' && adminCheck.data.role !== 'admin') {
+        showError('Access Denied — Invalid role');
+        await sb.auth.signOut();
+        btn.disabled = false; btn.textContent = 'Sign In to Dashboard';
+        return;
+      }
+      
+      showToast('Welcome, ' + (adminCheck.data.name || 'Admin'), 'success');
       showSection('dashboardSection');
     }
   } catch (err) { showError('Error: ' + err.message); btn.disabled = false; btn.textContent = 'Sign In to Dashboard'; }
@@ -411,7 +419,7 @@ async function loadDashboard() {
     if (ctx) dashChartInstance = new Chart(ctx, { type: 'line', data: { labels: months, datasets: [{ label: 'Revenue', data, borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.1)', tension: 0.4, fill: true, borderWidth: 2.5, pointBackgroundColor: '#ff6b35' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#6b7280', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#6b7280', font: { size: 10 } }, grid: { display: false } } } } });
     const rec = await sb.from('payments').select('*').order('payment_date', { ascending: false }).limit(3);
     const recEl = document.getElementById('recentPayments');
-    if (rec.data && rec.data.length > 0) recEl.innerHTML = rec.data.map(p => '<div class="flex items-center justify-between py-2" style="border-bottom: 1px solid #1f1f2e;"><div><p class="text-xs text-gray-400">' + formatDate(p.payment_date) + '</p><p class="text-xs text-gray-500">' + (p.payment_method || 'Cash') + '</p></div><p class="text-sm font-bold" style="color: #22c55e;">' + formatCurrency(p.amount) + '</p></div>').join('');
+    if (rec.data && rec.data.length > 0) recEl.innerHTML = rec.data.map(p => '<div class="flex items-center justify-between py-2" style="border-bottom: 1px solid #1f1f2e;"><div><p class="text-xs text-gray-400">' + formatDate(p.payment_date) + '</p><p class="text-xs text-gray-500">' + (p.method || 'Cash') + '</p></div><p class="text-sm font-bold" style="color: #22c55e;">' + formatCurrency(p.amount) + '</p></div>').join('');
     else recEl.innerHTML = '<p class="text-xs text-gray-500">No payments yet</p>';
   } catch (err) { console.error(err); }
 }
@@ -463,10 +471,6 @@ function openAddRetailerModal() {
   document.getElementById('addRetailerForm').reset();
   document.getElementById('retLimit').value = '50';
   document.getElementById('retLockMsg').value = 'Payment karein, phone unlock ho jayega';
-  document.getElementById('retShowShopName').checked = true;
-  document.getElementById('retShowPhone').checked = true;
-  document.getElementById('retShowDueAmount').checked = true;
-  document.getElementById('retShowDueDate').checked = true;
   openModal('addRetailerModal');
 }
 
@@ -487,7 +491,11 @@ async function handleAddRetailer(e) {
   }
   
   try {
+    // ✅ Save current admin session
+    const currentSession = await sb.auth.getSession();
+    
     // STEP A: Create Supabase Auth user
+    // ⚠️ signUp logs out current user — we need to restore session after
     const { data: authData, error: authError } = 
       await sb.auth.signUp({
         email: email,
@@ -506,6 +514,14 @@ async function handleAddRetailer(e) {
       return;
     }
     
+    // ✅ Restore admin session (signUp may have logged us out)
+    if (currentSession.data && currentSession.data.session) {
+      await sb.auth.setSession({
+        access_token: currentSession.data.session.access_token,
+        refresh_token: currentSession.data.session.refresh_token
+      });
+    }
+    
     // STEP B: Insert into businesses
     const { data: business, error: bizError } = await sb
       .from('businesses')
@@ -520,6 +536,8 @@ async function handleAddRetailer(e) {
         license_key: generateLicenseKey(),
         device_limit: parseInt(document.getElementById('retLimit').value) || 50,
         is_active: true,
+        lock_message: document.getElementById('retLockMsg') ? document.getElementById('retLockMsg').value.trim() : 'Payment karein, phone unlock ho jayega',
+        color: document.getElementById('retColor') ? document.getElementById('retColor').value : 'orange',
         auth_user_id: (authData && authData.user) ? authData.user.id : null
       })
       .select()
@@ -528,24 +546,6 @@ async function handleAddRetailer(e) {
     if (bizError) {
       showToast('Business error: ' + bizError.message, 'error');
       return;
-    }
-    
-    // Insert notice settings if present
-    const noticeStyleEl = document.getElementById('retNoticeStyle');
-    if (noticeStyleEl && business && business.id) {
-      const { error: noticeError } = await sb.from('notices').insert({
-        business_id: business.id,
-        notice_style: noticeStyleEl.value,
-        show_due_amount: document.getElementById('retShowDueAmount') ? document.getElementById('retShowDueAmount').checked : true,
-        show_shop_name: document.getElementById('retShowShopName') ? document.getElementById('retShowShopName').checked : true,
-        show_phone: document.getElementById('retShowPhone') ? document.getElementById('retShowPhone').checked : true,
-        show_due_date: document.getElementById('retShowDueDate') ? document.getElementById('retShowDueDate').checked : true,
-        color: document.getElementById('retColor') ? document.getElementById('retColor').value : 'orange',
-        sim_removal_action: 'notice_only'
-      });
-      if (noticeError) {
-        console.warn('Notice insert skipped:', noticeError.message);
-      }
     }
     
     // STEP C: Show credentials modal
@@ -661,7 +661,6 @@ async function viewRetailer(id) {
     const active = currentRetailer.is_active !== false;
     
     content.innerHTML = 
-      // Header
       '<div class="glass p-5 mb-4">' +
         '<div class="flex items-start gap-3">' +
           '<div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 font-bold" style="background: linear-gradient(135deg, #ff6b35, #8b5cf6);">' + init + '</div>' +
@@ -679,7 +678,6 @@ async function viewRetailer(id) {
         '</div>' +
       '</div>' +
       
-      // Usage stats
       '<div class="grid grid-cols-2 gap-3 mb-4">' +
         '<div class="stat-card"><p class="text-xs text-gray-400 mb-1">Customers</p><p class="text-2xl font-extrabold">' + custCount + '</p></div>' +
         '<div class="stat-card"><p class="text-xs text-gray-400 mb-1">Devices Used</p><p class="text-2xl font-extrabold">' + devCount + '</p></div>' +
@@ -687,7 +685,6 @@ async function viewRetailer(id) {
         '<div class="stat-card"><p class="text-xs text-gray-400 mb-1">Available</p><p class="text-2xl font-extrabold" style="color: ' + (remaining > 10 ? '#22c55e' : '#f59e0b') + ';">' + remaining + '</p></div>' +
       '</div>' +
       
-      // Action buttons
       '<div class="grid grid-cols-2 gap-2 mb-2">' +
         '<button onclick="openIncreaseLimit(\'' + id + '\', ' + limit + ')" class="btn-primary">+ Add Devices</button>' +
         '<button onclick="toggleRetailer(\'' + id + '\', ' + active + ')" class="btn-secondary">' + (active ? 'Suspend' : 'Activate') + '</button>' +
@@ -697,7 +694,6 @@ async function viewRetailer(id) {
         '<button onclick="handleResendRetailerCredentials(\'' + id + '\')" class="btn-secondary" style="border-color: rgba(34,197,94,0.3); color: #4ade80; font-size: 12px;">💬 Resend Credentials</button>' +
       '</div>' +
       
-      // Lock screen preview
       '<div class="glass p-5 mb-4">' +
         '<h3 class="text-sm font-bold mb-3">📱 Lock Screen Preview</h3>' +
         '<p class="text-xs text-gray-500 mb-3">Customer ke phone par aise dikhega:</p>' +
@@ -718,7 +714,6 @@ async function viewRetailer(id) {
         '</div>' +
       '</div>' +
       
-      // Delete button
       '<button onclick="deleteRetailer(\'' + id + '\')" class="btn-danger w-full py-3">Delete Retailer</button>';
   } catch (err) {
     content.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>';
@@ -798,23 +793,32 @@ function renderDevices(ds) {
   const list = document.getElementById('devicesList');
   if (ds.length === 0) { list.innerHTML = '<p class="text-center text-gray-500 py-8 text-sm">No devices found</p>'; return; }
   list.innerHTML = ds.map(d => {
-    const locked = d.is_locked === true;
+    const locked = d.status === 'locked';
     return '<div class="card-item" style="cursor: default;">' +
       '<div class="flex items-start justify-between gap-2 mb-2">' +
         '<div class="min-w-0"><h3 class="font-bold text-sm truncate">' + (d.model || 'Unknown') + '</h3><p class="text-[11px] text-gray-500 font-mono">IMEI: ' + (d.imei || 'N/A') + '</p></div>' +
         '<span class="badge ' + (locked ? 'badge-danger' : 'badge-success') + '">' + (locked ? '🔒 Locked' : '✓ Active') + '</span>' +
       '</div>' +
       (d.purchase_price ? '<p class="text-xs text-gray-400 mb-2">💰 ' + formatCurrency(d.purchase_price) + '</p>' : '') +
-      '<button onclick="sendCommand(\'' + d.id + '\', \'' + (locked ? 'UNLOCK' : 'LOCK') + '\')" class="' + (locked ? 'btn-success' : 'btn-danger') + ' w-full mt-2">' + (locked ? '🔓 Unlock' : '🔒 Lock') + '</button>' +
+      '<button onclick="sendCommand(\'' + (d.device_id || d.id) + '\', \'' + (locked ? 'UNLOCK' : 'LOCK') + '\')" class="' + (locked ? 'btn-success' : 'btn-danger') + ' w-full mt-2">' + (locked ? '🔓 Unlock' : '🔒 Lock') + '</button>' +
     '</div>';
   }).join('');
 }
 
-async function sendCommand(deviceId, type) {
+// ✅ FIXED — device_id (DPC UUID) use kar raha hai, aur business_id bhi bhej raha hai
+async function sendCommand(deviceUuid, type) {
   if (!confirm(type + ' this device?')) return;
   try {
-    await sb.from('device_commands').insert({ device_id: deviceId, command_type: type, status: 'pending', issued_at: new Date().toISOString() });
-    await sb.from('devices').update({ is_locked: type === 'LOCK' }).eq('id', deviceId);
+    // Find device to get business_id
+    const dev = allDevices.find(d => d.device_id === deviceUuid || d.id === deviceUuid);
+    await sb.from('device_commands').insert({ 
+      device_id: deviceUuid,           // ✅ DPC UUID (TEXT)
+      business_id: dev ? dev.business_id : null,
+      command_type: type, 
+      status: 'pending', 
+      issued_at: new Date().toISOString() 
+    });
+    await sb.from('devices').update({ status: type === 'LOCK' ? 'locked' : 'active' }).eq('id', dev ? dev.id : deviceUuid);
     showToast(type + ' command sent!', 'success');
     loadDevices();
   } catch (err) { showToast('Error: ' + err.message, 'error'); }
@@ -833,7 +837,7 @@ async function loadPayments() {
     setText('paymentCount', allPayments.length + ' payment' + (allPayments.length !== 1 ? 's' : ''));
     setText('paymentTotal', formatCurrency(total));
     if (allPayments.length === 0) { list.innerHTML = '<div class="glass p-8 text-center"><p class="text-gray-400">No payments yet</p></div>'; return; }
-    list.innerHTML = allPayments.map(p => '<div class="card-item" style="cursor: default;"><div class="flex items-center justify-between gap-3"><div class="min-w-0 flex-1"><p class="text-[11px] text-gray-500 font-mono mb-1">' + (p.receipt_number || 'TRX-' + (p.id||'').substring(0,8)) + '</p><p class="text-lg font-bold" style="color: #22c55e;">' + formatCurrency(p.amount) + '</p><div class="flex items-center gap-2 mt-1"><span class="badge badge-warning">' + (p.payment_method || 'Cash') + '</span><span class="text-[11px] text-gray-400">' + formatDate(p.payment_date) + '</span></div></div><span class="badge badge-success">✓</span></div></div>').join('');
+    list.innerHTML = allPayments.map(p => '<div class="card-item" style="cursor: default;"><div class="flex items-center justify-between gap-3"><div class="min-w-0 flex-1"><p class="text-[11px] text-gray-500 font-mono mb-1">' + (p.transaction_id || 'TRX-' + (p.id||'').substring(0,8)) + '</p><p class="text-lg font-bold" style="color: #22c55e;">' + formatCurrency(p.amount) + '</p><div class="flex items-center gap-2 mt-1"><span class="badge badge-warning">' + (p.method || 'Cash') + '</span><span class="text-[11px] text-gray-400">' + formatDate(p.payment_date) + '</span></div></div><span class="badge badge-success">✓</span></div></div>').join('');
   } catch (err) { list.innerHTML = '<p class="text-center text-danger py-8 text-sm">Error: ' + err.message + '</p>'; }
 }
 
@@ -854,9 +858,9 @@ async function loadReports() {
   if (reportRevenueInstance) reportRevenueInstance.destroy();
   const ctx1 = document.getElementById('reportRevenueChart');
   if (ctx1) reportRevenueInstance = new Chart(ctx1, { type: 'bar', data: { labels: months, datasets: [{ label: 'Revenue', data, backgroundColor: '#ff6b35', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#6b7280', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#6b7280', font: { size: 10 } }, grid: { display: false } } } } });
-  const devR = await sb.from('devices').select('is_locked');
+  const devR = await sb.from('devices').select('status');
   let locked = 0, active = 0;
-  if (devR.data) devR.data.forEach(d => { if (d.is_locked) locked++; else active++; });
+  if (devR.data) devR.data.forEach(d => { if (d.status === 'locked') locked++; else active++; });
   if (reportStatusInstance) reportStatusInstance.destroy();
   const ctx2 = document.getElementById('reportStatusChart');
   if (ctx2) reportStatusInstance = new Chart(ctx2, { type: 'doughnut', data: { labels: ['Active', 'Locked'], datasets: [{ data: [active, locked], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#a0a0b0', font: { size: 11 }, padding: 12, usePointStyle: true } } } } });
@@ -876,13 +880,20 @@ function exportCSV() {
   showToast('Exported!', 'success');
 }
 
-// SESSION
+// ✅ FIXED SESSION CHECK — admin_users use kar raha hai
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     const s = await sb.auth.getSession();
     if (s.data && s.data.session) {
-      const p = await sb.from('profiles').select('*').eq('id', s.data.session.user.id).maybeSingle();
-      if (p.data && p.data.role === 'master_admin') { showSection('dashboardSection'); return; }
+      const adminCheck = await sb
+        .from('admin_users')
+        .select('id, role, is_active')
+        .eq('auth_user_id', s.data.session.user.id)
+        .maybeSingle();
+      if (adminCheck.data && adminCheck.data.is_active !== false) {
+        showSection('dashboardSection'); 
+        return;
+      }
     }
     showSection('loginSection');
   } catch (err) { showSection('loginSection'); }
